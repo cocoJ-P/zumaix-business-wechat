@@ -1,0 +1,4 @@
+<view class="wrap">
+  <text class="title">{{title}}</text>
+  <text wx:if="{{description}}" class="desc">{{description}}</text>
+</view>

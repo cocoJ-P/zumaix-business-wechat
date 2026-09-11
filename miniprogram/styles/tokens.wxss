@@ -1,0 +1,66 @@
+page {
+  --bg-primary: #f4f1eb;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #efeeea;
+
+  --text-primary: #1c1c1a;
+  --text-secondary: #6b6a66;
+  --text-tertiary: #9a9994;
+
+  --brand-primary: #1f6b5c;
+  --brand-light: #e8f2ef;
+
+  --status-success: #2a7a68;
+  --status-warning: #8a6a24;
+  --status-danger: #b54a3c;
+  --status-info: #3d6b8a;
+
+  --border-light: #e6e4de;
+
+  --radius-sm: 8rpx;
+  --radius-md: 12rpx;
+  --radius-lg: 16rpx;
+
+  --shadow-card: 0 2rpx 8rpx rgba(28, 28, 26, 0.04);
+
+  --space-1: 8rpx;
+  --space-2: 16rpx;
+  --space-3: 24rpx;
+  --space-4: 32rpx;
+  --space-5: 40rpx;
+  --space-6: 48rpx;
+  --space-8: 64rpx;
+
+  --font-xs: 22rpx;
+  --font-sm: 24rpx;
+  --font-md: 28rpx;
+  --font-lg: 32rpx;
+  --font-xl: 40rpx;
+  --font-xxl: 48rpx;
+
+  --font-regular: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+
+  --tag-neutral-bg: #efeeea;
+  --tag-neutral-text: #6b6a66;
+  --tag-brand-bg: #e8f2ef;
+  --tag-brand-text: #1f6b5c;
+  --tag-info-bg: #eaf1f5;
+  --tag-info-text: #3d6b8a;
+  --tag-success-bg: #e8f3ef;
+  --tag-success-text: #2a7a68;
+  --tag-warning-bg: #f5f0e4;
+  --tag-warning-text: #8a6a24;
+
+  --tint-policy: #f3f6f8;
+  --tint-scene: #f1f6f4;
+  --tint-contest: #f6f3ea;
+  --tint-finance: #f4f3f7;
+  --tint-funding: #f5f2ed;
+  --tint-park: #f1f6f4;
+
+  --ink-green: #16382f;
+  --radius-xl: 28rpx;
+  --shadow-lift: 0 10rpx 40rpx rgba(28, 28, 26, 0.06);
+}

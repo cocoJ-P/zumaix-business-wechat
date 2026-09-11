@@ -1,0 +1,18 @@
+<view class="page">
+  <block wx:if="{{item}}">
+    <view class="event">
+      <text class="kind">{{item.kind}}</text>
+      <text class="sep">·</text>
+      <text class="status">{{item.eventStatus}}</text>
+    </view>
+    <text class="title">{{item.title}}</text>
+    <text wx:if="{{item.reason}}" class="reason">{{item.reason}}</text>
+    <text class="note">脱水后的来源验证与企业匹配结果将在下一阶段展示。</text>
+    <view class="actions">
+      <primary-button text="加入待处理" bind:tap="onAdd" />
+    </view>
+  </block>
+  <block wx:else>
+    <text class="note">没有可查看的内容</text>
+  </block>
+</view>

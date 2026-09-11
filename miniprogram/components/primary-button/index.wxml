@@ -1,0 +1,8 @@
+<view
+  class="btn {{disabled ? 'btn-disabled' : ''}}"
+  hover-class="{{disabled ? '' : 'btn-hover'}}"
+  hover-stay-time="80"
+  bindtap="onTap"
+>
+  {{text}}
+</view>

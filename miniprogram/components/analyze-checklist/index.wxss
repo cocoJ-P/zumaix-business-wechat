@@ -1,0 +1,64 @@
+.list {
+  padding: 8rpx 0 4rpx;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  padding: 12rpx 0;
+}
+
+.mark {
+  width: 36rpx;
+  height: 36rpx;
+  margin-right: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.check {
+  font-size: 28rpx;
+  line-height: 1;
+  color: var(--brand-primary);
+}
+
+.pulse {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background: var(--brand-primary);
+  box-shadow: 0 0 0 6rpx rgba(31, 107, 92, 0.12);
+}
+
+.idle {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  border: 2rpx solid #d6d3cc;
+  box-sizing: border-box;
+}
+
+.label {
+  font-size: var(--font-sm);
+  color: var(--text-tertiary);
+  line-height: 1.5;
+}
+
+.is-done .label {
+  color: var(--text-secondary);
+}
+
+.is-active .label {
+  color: var(--text-primary);
+  font-weight: var(--font-medium);
+}
+
+.is-compact .row {
+  padding: 8rpx 0;
+}
+
+.is-compact .label {
+  font-size: var(--font-xs);
+}

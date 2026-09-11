@@ -1,0 +1,10 @@
+{
+  "navigationBarTitleText": "待处理",
+  "navigationBarBackgroundColor": "#F4F1EB",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#F4F1EB",
+  "usingComponents": {
+    "empty-state": "/components/empty-state/index",
+    "analyze-checklist": "/components/analyze-checklist/index"
+  }
+}

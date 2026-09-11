@@ -1,0 +1,17 @@
+<view class="wrap">
+  <text class="kicker">企业匹配</text>
+  <view class="score-row">
+    <text class="score">{{matching.score}}%</text>
+    <view class="score-copy">
+      <text class="advice">{{matching.adviceLabel}}</text>
+      <text class="hint">综合匹配</text>
+    </view>
+  </view>
+  <text wx:if="{{matching.referenceOnly}}" class="ref">参考判断</text>
+  <text class="detail">{{matching.adviceDetail}}</text>
+  <view class="block">
+    <text class="label">战略匹配</text>
+    <text class="value">{{matching.strategicLevel}}</text>
+    <text class="reason">{{matching.strategicReason}}</text>
+  </view>
+</view>

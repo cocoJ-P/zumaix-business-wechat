@@ -1,0 +1,74 @@
+.wrap {
+  padding: 8rpx 0;
+}
+
+.kicker {
+  display: block;
+  margin-bottom: 16rpx;
+  font-size: var(--font-sm);
+  color: var(--text-tertiary);
+  letter-spacing: 0.04em;
+}
+
+.node {
+  padding: 4rpx 0;
+}
+
+.role {
+  display: block;
+  font-size: var(--font-xs);
+  color: var(--text-tertiary);
+}
+
+.name {
+  display: block;
+  margin-top: 4rpx;
+  font-size: var(--font-md);
+  color: var(--text-primary);
+  line-height: 1.45;
+}
+
+.arrow {
+  margin: 8rpx 0;
+  font-size: var(--font-sm);
+  color: var(--text-tertiary);
+}
+
+.official {
+  margin-top: 18rpx;
+}
+
+.official-label {
+  display: block;
+  font-size: var(--font-xs);
+  color: var(--text-tertiary);
+}
+
+.official-value {
+  display: block;
+  margin-top: 4rpx;
+  font-size: var(--font-md);
+  color: var(--text-primary);
+  line-height: 1.45;
+}
+
+.verified {
+  display: block;
+  margin-top: 20rpx;
+  font-size: var(--font-sm);
+  color: var(--brand-primary);
+}
+
+.warn {
+  display: block;
+  font-size: var(--font-md);
+  color: var(--status-warning);
+  line-height: 1.5;
+}
+
+.link {
+  display: block;
+  margin-top: 20rpx;
+  font-size: var(--font-sm);
+  color: var(--brand-primary);
+}

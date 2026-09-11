@@ -1,0 +1,22 @@
+<view class="overlay" aria-hidden="true">
+  <view class="edge edge-left {{leftArmed ? 'is-armed' : ''}} {{live ? 'is-live' : ''}}" style="{{leftStyle}}">
+    <view class="frost frost-1"></view>
+    <view class="frost frost-2"></view>
+    <view class="frost frost-3"></view>
+    <view class="wash"></view>
+    <view class="bloom"></view>
+    <view class="rail">
+      <text class="copy copy-low">{{leftText}}</text>
+    </view>
+  </view>
+  <view class="edge edge-right {{rightArmed ? 'is-armed' : ''}} {{live ? 'is-live' : ''}}" style="{{rightStyle}}">
+    <view class="frost frost-1"></view>
+    <view class="frost frost-2"></view>
+    <view class="frost frost-3"></view>
+    <view class="wash"></view>
+    <view class="bloom"></view>
+    <view class="rail">
+      <text class="copy copy-inbox">{{rightText}}</text>
+    </view>
+  </view>
+</view>

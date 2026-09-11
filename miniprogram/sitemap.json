@@ -1,0 +1,9 @@
+{
+  "desc": "筑脉查查",
+  "rules": [
+    {
+      "action": "allow",
+      "page": "*"
+    }
+  ]
+}

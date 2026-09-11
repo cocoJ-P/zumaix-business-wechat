@@ -1,0 +1,14 @@
+{
+  "navigationBarTitleText": "查查",
+  "navigationBarBackgroundColor": "#F4F1EB",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#F4F1EB",
+  "backgroundTextStyle": "dark",
+  "usingComponents": {
+    "analyze-checklist": "/components/analyze-checklist/index",
+    "primary-button": "/components/primary-button/index",
+    "secondary-button": "/components/secondary-button/index",
+    "empty-state": "/components/empty-state/index",
+    "source-provenance": "/components/source-provenance/index"
+  }
+}

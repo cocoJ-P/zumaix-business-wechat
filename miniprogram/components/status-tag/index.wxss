@@ -1,0 +1,36 @@
+.tag {
+  display: inline-flex;
+  align-items: center;
+  height: 40rpx;
+  padding: 0 12rpx;
+  font-size: var(--font-xs);
+  font-weight: var(--font-medium);
+  line-height: 1;
+  border-radius: 6rpx;
+  max-width: 100%;
+}
+
+.tag-neutral {
+  color: var(--tag-neutral-text);
+  background: var(--tag-neutral-bg);
+}
+
+.tag-brand {
+  color: var(--tag-brand-text);
+  background: var(--tag-brand-bg);
+}
+
+.tag-info {
+  color: var(--tag-info-text);
+  background: var(--tag-info-bg);
+}
+
+.tag-success {
+  color: var(--tag-success-text);
+  background: var(--tag-success-bg);
+}
+
+.tag-warning {
+  color: var(--tag-warning-text);
+  background: var(--tag-warning-bg);
+}

@@ -1,0 +1,82 @@
+<view class="page">
+  <view class="profile">
+    <text class="kicker">当前企业</text>
+    <text class="profile-name">{{enterpriseName}}</text>
+    <text class="profile-desc">{{enterpriseStage}}</text>
+  </view>
+
+  <block wx:if="{{viewState === 'loading'}}">
+    <view class="section">
+      <loading-state text="正在加载" />
+    </view>
+  </block>
+
+  <block wx:elif="{{viewState === 'error'}}">
+    <view class="section">
+      <empty-state title="暂时无法加载" description="请稍后重试" />
+    </view>
+  </block>
+
+  <block wx:else>
+    <view class="section">
+      <section-header title="企业线索" />
+      <view class="counts">
+        <view class="count">
+          <text class="count-num">{{summary.pending}}</text>
+          <text class="count-label">待审批</text>
+        </view>
+        <view class="count">
+          <text class="count-num">{{summary.approved}}</text>
+          <text class="count-label">已通过</text>
+        </view>
+        <view class="count">
+          <text class="count-num">{{summary.onHold}}</text>
+          <text class="count-label">暂存</text>
+        </view>
+      </view>
+      <block wx:if="{{leads.length}}">
+        <view class="panel">
+          <view
+            class="follow {{index > 0 ? 'follow-next' : ''}}"
+            wx:for="{{leads}}"
+            wx:key="leadId"
+            data-id="{{item.opportunityId}}"
+            bindtap="onOpenLead"
+          >
+            <text class="follow-title">{{item.title}}</text>
+            <view class="follow-row">
+              <text class="follow-stage">{{item.statusLabel}}</text>
+              <text class="follow-deadline">{{item.submissionCount}}人提交</text>
+            </view>
+          </view>
+        </view>
+      </block>
+      <empty-state wx:else title="暂无企业线索" description="在机会详情中提交后会显示在这里" />
+    </view>
+
+    <view class="section">
+      <section-header title="正在申请" />
+      <block wx:if="{{applications.length}}">
+        <view class="panel">
+          <view
+            class="follow {{index > 0 ? 'follow-next' : ''}}"
+            wx:for="{{applications}}"
+            wx:key="id"
+            data-id="{{item.opportunityId}}"
+            bindtap="onOpenApplication"
+          >
+            <text class="follow-title">{{item.title}}</text>
+            <view class="follow-row">
+              <status-tag wx:if="{{item.stage === '等待结果'}}" text="{{item.stage}}" />
+              <text wx:else class="follow-stage">{{item.stage}}</text>
+              <text wx:if="{{item.deadline}}" class="follow-deadline">截止 {{item.deadline}}</text>
+            </view>
+          </view>
+        </view>
+      </block>
+      <empty-state wx:else title="暂无跟进事项" description="开始跟进后会显示在这里" />
+    </view>
+
+    <text class="reset" bindtap="onResetDemo">重置演示数据</text>
+  </block>
+</view>

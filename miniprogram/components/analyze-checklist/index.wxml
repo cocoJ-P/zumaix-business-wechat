@@ -1,0 +1,14 @@
+<view class="list {{compact ? 'is-compact' : ''}}">
+  <view
+    class="row {{item.done ? 'is-done' : ''}} {{item.active ? 'is-active' : ''}}"
+    wx:for="{{steps}}"
+    wx:key="key"
+  >
+    <view class="mark">
+      <text wx:if="{{item.done}}" class="check">✓</text>
+      <view wx:elif="{{item.active}}" class="pulse"></view>
+      <view wx:else class="idle"></view>
+    </view>
+    <text class="label">{{item.text}}</text>
+  </view>
+</view>

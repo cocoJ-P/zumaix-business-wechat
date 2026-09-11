@@ -1,0 +1,22 @@
+.btn {
+  width: 100%;
+  height: 88rpx;
+  padding: 0 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--brand-primary);
+  color: #ffffff;
+  font-size: var(--font-md);
+  font-weight: var(--font-medium);
+  border-radius: var(--radius-md);
+  letter-spacing: 0.02em;
+}
+
+.btn-hover {
+  opacity: 0.88;
+}
+
+.btn-disabled {
+  opacity: 0.45;
+}

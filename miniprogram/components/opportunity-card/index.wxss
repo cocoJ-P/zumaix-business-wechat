@@ -1,0 +1,54 @@
+.card {
+  padding: 28rpx 28rpx 24rpx;
+  background: var(--bg-secondary);
+  border: 1rpx solid var(--border-light);
+  border-radius: var(--radius-md);
+}
+
+.card-hover {
+  background: #fbfbfa;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.score {
+  margin-left: 16rpx;
+  font-size: var(--font-md);
+  font-weight: var(--font-medium);
+  color: var(--brand-primary);
+  flex-shrink: 0;
+}
+
+.title {
+  display: -webkit-box;
+  margin-top: 16rpx;
+  font-size: var(--font-lg);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  line-height: 1.4;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.summary {
+  display: -webkit-box;
+  margin-top: 10rpx;
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.deadline {
+  display: block;
+  margin-top: 16rpx;
+  font-size: var(--font-sm);
+  color: var(--text-tertiary);
+}

@@ -1,0 +1,47 @@
+{
+  "pages": [
+    "pages/home/index",
+    "pages/opportunity/index",
+    "pages/user/index",
+    "pages/check/index",
+    "pages/opportunity-detail/index",
+    "pages/inbox/index",
+    "pages/judgment/index"
+  ],
+  "window": {
+    "backgroundColor": "#F4F1EB",
+    "backgroundTextStyle": "dark",
+    "navigationBarBackgroundColor": "#F4F1EB",
+    "navigationBarTitleText": "筑脉查查",
+    "navigationBarTextStyle": "black"
+  },
+  "tabBar": {
+    "color": "#9A9994",
+    "selectedColor": "#1F6B5C",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/home/index",
+        "text": "首页",
+        "iconPath": "images/tab/home.png",
+        "selectedIconPath": "images/tab/home-active.png"
+      },
+      {
+        "pagePath": "pages/opportunity/index",
+        "text": "机会",
+        "iconPath": "images/tab/opportunity.png",
+        "selectedIconPath": "images/tab/opportunity-active.png"
+      },
+      {
+        "pagePath": "pages/user/index",
+        "text": "我的",
+        "iconPath": "images/tab/user.png",
+        "selectedIconPath": "images/tab/user-active.png"
+      }
+    ]
+  },
+  "sitemapLocation": "sitemap.json",
+  "style": "v2",
+  "lazyCodeLoading": "requiredComponents"
+}

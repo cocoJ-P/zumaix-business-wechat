@@ -1,0 +1,93 @@
+<view class="page">
+  <block wx:if="{{missing || !record}}">
+    <empty-state title="没有找到这个机会" description="可能是演示数据尚未准备，或链接已失效。" />
+  </block>
+  <block wx:else>
+    <view class="header">
+      <text class="type">{{record.typeLabel}}</text>
+      <text class="title">{{record.title}}</text>
+      <text class="publisher">{{record.publisher}}</text>
+      <view class="meta">
+        <text class="deadline">截止 {{record.deadline}}</text>
+        <text class="status">{{record.statusLabel}}</text>
+      </view>
+      <text wx:if="{{record.following && record.followStage}}" class="follow">正式跟进中 · {{record.followStage}}</text>
+    </view>
+
+    <view class="section">
+      <source-provenance
+        nodes="{{[]}}"
+        publisher="{{record.verified ? record.publisher : ''}}"
+        document=""
+        publishedAt=""
+        verified="{{record.verified}}"
+        unverified="{{!record.verified}}"
+        showOfficialAction="{{record.verified}}"
+        bind:official="onOpenOfficial"
+      />
+    </view>
+
+    <view class="section">
+      <matching-summary matching="{{record.matching}}" />
+    </view>
+
+    <view class="section">
+      <requirement-list items="{{record.matching.qualifications}}" />
+    </view>
+
+    <view class="section">
+      <text class="kicker">时间与材料</text>
+      <view class="facts">
+        <text class="fact">截止日期 {{deadlineHint}}</text>
+        <text class="fact">要求材料 {{record.matching.requiredMaterials}} 项</text>
+        <text class="fact">已有材料 {{record.matching.ownedMaterials}} 项</text>
+        <text class="fact">待准备 {{record.matching.pendingMaterials}} 项</text>
+        <text class="fact">准备成本 {{record.matching.prepCost}}</text>
+      </view>
+    </view>
+
+    <view class="section lead">
+      <text class="kicker">企业线索</text>
+      <block wx:if="{{lead && lead.submittedByCurrentUser}}">
+        <text class="lead-title">已提交企业线索</text>
+        <text class="lead-meta">{{lead.submissionCount}} 位成员已提交 · {{leadStatusLabel}}</text>
+      </block>
+      <block wx:elif="{{record.expired}}">
+        <text class="lead-title">当前已截止</text>
+        <text class="lead-meta">不建议再提交企业内部汇总。</text>
+      </block>
+      <block wx:elif="{{record.matching.referenceOnly}}">
+        <text class="lead-note">来源尚未核验，提交仅作为企业内部备忘。</text>
+        <primary-button text="加入企业线索" bind:tap="onAskLead" />
+      </block>
+      <block wx:else>
+        <primary-button text="加入企业线索" bind:tap="onAskLead" />
+      </block>
+    </view>
+  </block>
+</view>
+
+<view wx:if="{{confirmVisible}}" class="mask" catchtap="onCancelLead">
+  <view class="dialog" catchtap="noop">
+    <text class="dialog-title">加入企业线索？</text>
+    <text class="dialog-body">该机会将提交到企业内部汇总审批。</text>
+    <view class="dialog-actions">
+      <view class="dialog-btn">
+        <secondary-button text="取消" bind:tap="onCancelLead" />
+      </view>
+      <view class="dialog-btn dialog-btn-gap">
+        <primary-button text="确认提交" bind:tap="onConfirmLead" />
+      </view>
+    </view>
+  </view>
+</view>
+
+<view wx:if="{{resultVisible}}" class="mask" catchtap="onCloseResult">
+  <view class="dialog" catchtap="noop">
+    <text class="dialog-title">{{resultTitle}}</text>
+    <text class="dialog-body">{{resultBody}}</text>
+    <view class="dialog-actions">
+      <primary-button text="知道了" bind:tap="onCloseResult" />
+    </view>
+  </view>
+</view>

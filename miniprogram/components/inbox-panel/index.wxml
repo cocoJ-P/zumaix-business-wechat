@@ -1,0 +1,56 @@
+<view class="panel">
+  <view class="head" bindtap="onOpenAll">
+    <view class="head-left">
+      <text class="title">待处理</text>
+      <text class="count">{{total}}</text>
+    </view>
+    <text class="more">查看全部 ></text>
+  </view>
+
+  <view class="meta">
+    <text>{{done}} 条已完成</text>
+    <text wx:if="{{analyzing}}"> · {{analyzing}} 条正在分析</text>
+    <text wx:if="{{waiting}}"> · {{waiting}} 条等待中</text>
+  </view>
+
+  <block wx:if="{{analyzingItems.length}}">
+    <view
+      class="run {{index === analyzingItems.length - 1 && !items.length ? 'run-last' : ''}}"
+      wx:for="{{analyzingItems}}"
+      wx:key="id"
+    >
+      <view class="status">
+        <view class="dot dot-live"></view>
+        <text>{{item.statusLabel}}</text>
+      </view>
+      <text class="item-title">{{item.title}}</text>
+      <analyze-checklist steps="{{item.steps}}" compact="{{true}}" />
+    </view>
+  </block>
+
+  <block wx:if="{{items.length}}">
+    <view
+      class="item {{index === items.length - 1 ? 'item-last' : ''}} item-done"
+      wx:for="{{items}}"
+      wx:key="id"
+      bindtap="onItemTap"
+      data-id="{{item.id}}"
+    >
+      <view class="item-main">
+        <view class="status">
+          <view class="dot dot-done"></view>
+          <text>{{item.statusLabel}}</text>
+        </view>
+        <text class="item-title">{{item.title}}</text>
+        <text class="item-note">{{item.noteText}}</text>
+      </view>
+      <text class="item-action">{{item.actionLabel}}</text>
+    </view>
+  </block>
+  <text wx:elif="{{!analyzingItems.length}}" class="empty">还没有分析完成的内容</text>
+
+  <view class="add" catchtap="onAdd">
+    <text class="add-mark">＋</text>
+    <text class="add-text">添加内容</text>
+  </view>
+</view>

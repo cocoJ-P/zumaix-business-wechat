@@ -1,0 +1,238 @@
+.swipe {
+  position: relative;
+  overflow: visible;
+  border-radius: var(--radius-xl);
+}
+
+.mover {
+  position: relative;
+  z-index: 1;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+}
+
+.mover-large {
+  box-shadow: var(--shadow-lift);
+  border-radius: var(--radius-xl);
+  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 200ms ease-out;
+  -webkit-transition: -webkit-transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 200ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 200ms ease-out;
+}
+
+.mover-large.is-deciding {
+  z-index: 3;
+  box-shadow: 0 18rpx 48rpx rgba(28, 28, 26, 0.1);
+  transition: none;
+  -webkit-transition: none;
+}
+
+.mover-large.is-committing {
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  -webkit-transition: -webkit-transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.stage {
+  perspective: 1400px;
+  -webkit-perspective: 1400px;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+}
+
+.flip {
+  position: relative;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  transition: transform 0.45s ease;
+  -webkit-transition: -webkit-transform 0.45s ease;
+}
+
+.is-flipped {
+  transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg);
+}
+
+.face {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.face-front {
+  transform: rotateY(0deg);
+  -webkit-transform: rotateY(0deg);
+}
+
+.face-back {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  transform: rotateY(180deg);
+  -webkit-transform: rotateY(180deg);
+  pointer-events: none;
+}
+
+.is-flipped .face-front {
+  pointer-events: none;
+}
+
+.is-flipped .face-back {
+  pointer-events: auto;
+}
+
+.card {
+  box-sizing: border-box;
+  padding: 40rpx 36rpx 32rpx;
+  border-radius: var(--radius-xl);
+}
+
+.card-large {
+  min-height: 520rpx;
+}
+
+.card-compact {
+  min-height: 0;
+  padding: 28rpx 28rpx 24rpx;
+  box-shadow: none;
+  background: #efece6;
+}
+
+.tint-policy {
+  background: var(--tint-policy);
+}
+
+.tint-scene {
+  background: var(--tint-scene);
+}
+
+.tint-contest {
+  background: var(--tint-contest);
+}
+
+.tint-finance {
+  background: var(--tint-finance);
+}
+
+.tint-funding {
+  background: var(--tint-funding);
+}
+
+.tint-park {
+  background: var(--tint-park);
+}
+
+.card-compact {
+  background: #efece6;
+}
+
+.event {
+  display: flex;
+  align-items: baseline;
+}
+
+.kind {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+}
+
+.sep {
+  margin: 0 10rpx;
+  color: var(--text-tertiary);
+}
+
+.status {
+  font-size: var(--font-sm);
+  color: var(--text-primary);
+  font-weight: var(--font-medium);
+}
+
+.title {
+  display: block;
+  margin-top: 28rpx;
+  font-size: 44rpx;
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+  line-height: 1.28;
+  letter-spacing: 0.01em;
+  white-space: pre-wrap;
+}
+
+.reason {
+  display: block;
+  margin-top: 28rpx;
+  font-size: var(--font-md);
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.action {
+  display: block;
+  margin-top: 48rpx;
+  font-size: var(--font-md);
+  color: var(--brand-primary);
+  font-weight: var(--font-medium);
+}
+
+.note {
+  display: block;
+  margin-top: 28rpx;
+  font-size: var(--font-sm);
+  color: var(--text-tertiary);
+  line-height: 1.6;
+}
+
+.back-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 32rpx;
+}
+
+.back-link {
+  font-size: var(--font-sm);
+  color: var(--text-tertiary);
+  padding: 8rpx 0;
+}
+
+.back-actions .action {
+  margin-top: 0;
+}
+
+.compact-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.compact-bottom {
+  display: flex;
+  align-items: center;
+  margin-top: 12rpx;
+}
+
+.compact-title {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-md);
+  color: var(--text-primary);
+  line-height: 1.4;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.chevron {
+  margin-left: 12rpx;
+  color: var(--text-tertiary);
+  font-size: 40rpx;
+  line-height: 1;
+}

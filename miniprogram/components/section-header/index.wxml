@@ -1,0 +1,4 @@
+<view class="header">
+  <text class="title">{{title}}</text>
+  <text wx:if="{{actionText}}" class="action" bindtap="onAction">{{actionText}}</text>
+</view>

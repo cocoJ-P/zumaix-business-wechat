@@ -1,0 +1,44 @@
+.wrap {
+  padding: 8rpx 0;
+}
+
+.kicker {
+  display: block;
+  margin-bottom: 16rpx;
+  font-size: var(--font-sm);
+  color: var(--text-tertiary);
+  letter-spacing: 0.04em;
+}
+
+.row {
+  display: flex;
+  align-items: flex-start;
+  padding: 10rpx 0;
+}
+
+.mark {
+  width: 36rpx;
+  flex-shrink: 0;
+  font-size: var(--font-md);
+  line-height: 1.5;
+}
+
+.mark-confirmed {
+  color: var(--status-success);
+}
+
+.mark-failed {
+  color: var(--status-danger);
+}
+
+.mark-unknown,
+.mark-not_applicable {
+  color: var(--status-warning);
+}
+
+.label {
+  flex: 1;
+  font-size: var(--font-md);
+  color: var(--text-primary);
+  line-height: 1.5;
+}

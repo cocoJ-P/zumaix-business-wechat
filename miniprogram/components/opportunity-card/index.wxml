@@ -1,0 +1,9 @@
+<view class="card" hover-class="card-hover" hover-stay-time="80" bindtap="onTap">
+  <view class="top">
+    <status-tag text="{{opportunity.type}}" />
+    <text class="score">{{opportunity.matchScore}}%</text>
+  </view>
+  <text class="title">{{opportunity.title}}</text>
+  <text wx:if="{{opportunity.summary}}" class="summary">{{opportunity.summary}}</text>
+  <text class="deadline">截止 {{opportunity.deadline}}</text>
+</view>

@@ -1,0 +1,22 @@
+<view class="composer">
+  <view class="head">
+    <view class="head-copy">
+      <text class="title">查一个机会</text>
+      <text class="hint">粘贴公众号、政策、场景、创赛等链接或内容</text>
+    </view>
+    <text class="paste" bindtap="onPaste">粘贴</text>
+  </view>
+  <textarea
+    class="input"
+    value="{{value}}"
+    maxlength="8000"
+    auto-height
+    disable-default-padding
+    show-confirm-bar="{{false}}"
+    adjust-position
+    placeholder="粘贴公众号链接、网页链接或正文……"
+    placeholder-class="placeholder"
+    bindinput="onInput"
+  />
+  <primary-button text="开始查查" bind:tap="onSubmit" />
+</view>

@@ -1,0 +1,13 @@
+{
+  "navigationBarTitleText": "我的",
+  "navigationBarBackgroundColor": "#F4F1EB",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#F4F1EB",
+  "backgroundTextStyle": "dark",
+  "usingComponents": {
+    "section-header": "/components/section-header/index",
+    "status-tag": "/components/status-tag/index",
+    "loading-state": "/components/loading-state/index",
+    "empty-state": "/components/empty-state/index"
+  }
+}

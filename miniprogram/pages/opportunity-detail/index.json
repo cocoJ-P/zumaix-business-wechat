@@ -1,0 +1,15 @@
+{
+  "navigationBarTitleText": "机会",
+  "navigationBarBackgroundColor": "#F4F1EB",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#F4F1EB",
+  "backgroundTextStyle": "dark",
+  "usingComponents": {
+    "source-provenance": "/components/source-provenance/index",
+    "matching-summary": "/components/matching-summary/index",
+    "requirement-list": "/components/requirement-list/index",
+    "primary-button": "/components/primary-button/index",
+    "secondary-button": "/components/secondary-button/index",
+    "empty-state": "/components/empty-state/index"
+  }
+}

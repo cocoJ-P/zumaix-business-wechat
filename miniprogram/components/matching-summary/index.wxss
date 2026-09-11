@@ -1,0 +1,83 @@
+.wrap {
+  padding: 8rpx 0;
+}
+
+.kicker {
+  display: block;
+  margin-bottom: 16rpx;
+  font-size: var(--font-sm);
+  color: var(--text-tertiary);
+  letter-spacing: 0.04em;
+}
+
+.score-row {
+  display: flex;
+  align-items: flex-end;
+}
+
+.score {
+  font-size: 64rpx;
+  font-weight: var(--font-semibold);
+  color: var(--brand-primary);
+  line-height: 1;
+}
+
+.score-copy {
+  margin-left: 20rpx;
+  padding-bottom: 6rpx;
+}
+
+.advice {
+  display: block;
+  font-size: var(--font-md);
+  font-weight: var(--font-medium);
+  color: var(--text-primary);
+}
+
+.hint {
+  display: block;
+  margin-top: 4rpx;
+  font-size: var(--font-xs);
+  color: var(--text-tertiary);
+}
+
+.ref {
+  display: block;
+  margin-top: 12rpx;
+  font-size: var(--font-sm);
+  color: var(--status-warning);
+}
+
+.detail {
+  display: block;
+  margin-top: 16rpx;
+  font-size: var(--font-md);
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+.block {
+  margin-top: 28rpx;
+}
+
+.label {
+  display: block;
+  font-size: var(--font-xs);
+  color: var(--text-tertiary);
+}
+
+.value {
+  display: block;
+  margin-top: 6rpx;
+  font-size: var(--font-lg);
+  font-weight: var(--font-semibold);
+  color: var(--text-primary);
+}
+
+.reason {
+  display: block;
+  margin-top: 10rpx;
+  font-size: var(--font-md);
+  color: var(--text-secondary);
+  line-height: 1.65;
+}

@@ -1,0 +1,9 @@
+{
+  "navigationBarTitleText": "查看判断",
+  "navigationBarBackgroundColor": "#F4F1EB",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#F4F1EB",
+  "usingComponents": {
+    "primary-button": "/components/primary-button/index"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "navigationStyle": "custom",
+  "disableSwipeBack": true,
+  "backgroundColor": "#F4F1EB",
+  "backgroundTextStyle": "dark",
+  "usingComponents": {
+    "discovery-card": "/components/discovery-card/index",
+    "decision-overlay": "/components/decision-overlay/index",
+    "inbox-panel": "/components/inbox-panel/index",
+    "empty-state": "/components/empty-state/index"
+  }
+}

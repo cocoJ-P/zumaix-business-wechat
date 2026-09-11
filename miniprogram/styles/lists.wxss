@@ -1,0 +1,105 @@
+.page {
+  min-height: 100%;
+  padding-right: 32rpx;
+  padding-left: 32rpx;
+  padding-bottom: 32rpx;
+}
+
+.section {
+  margin-top: 40rpx;
+}
+
+.section-first {
+  margin-top: 24rpx;
+}
+
+.stack-item {
+  margin-bottom: 16rpx;
+}
+
+.panel {
+  background: var(--bg-secondary);
+  border: 1rpx solid var(--border-light);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.note,
+.follow {
+  padding: 24rpx 28rpx;
+}
+
+.note-next,
+.follow-next {
+  border-top: 1rpx solid var(--border-light);
+}
+
+.note-meta,
+.follow-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.note-left {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.dot {
+  width: 10rpx;
+  height: 10rpx;
+  margin-right: 10rpx;
+  background: var(--brand-primary);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.note-time,
+.follow-deadline,
+.follow-stage {
+  font-size: var(--font-sm);
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+.note-time,
+.follow-deadline {
+  margin-left: 16rpx;
+}
+
+.note-unread .note-content {
+  font-weight: var(--font-medium);
+}
+
+.note-content {
+  display: -webkit-box;
+  margin-top: 12rpx;
+  font-size: var(--font-md);
+  color: var(--text-primary);
+  line-height: 1.55;
+  overflow: hidden;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.follow-title {
+  display: -webkit-box;
+  font-size: var(--font-md);
+  font-weight: var(--font-medium);
+  color: var(--text-primary);
+  line-height: 1.4;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.follow-row {
+  justify-content: flex-start;
+  margin-top: 12rpx;
+}
+
+.retry {
+  margin-top: 24rpx;
+}

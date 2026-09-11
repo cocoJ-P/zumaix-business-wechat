@@ -1,0 +1,59 @@
+<view class="swipe swipe-{{size}}">
+  <view
+    class="mover mover-{{size}} {{deciding ? 'is-deciding' : ''}} {{settling ? 'is-settling' : ''}} {{committing ? 'is-committing' : ''}}"
+    style="{{moverStyle}}"
+    bindtouchstart="onStart"
+    catchtouchmove="onMove"
+    bindtouchend="onEnd"
+    bindtouchcancel="onEnd"
+  >
+    <view class="stage">
+      <view class="flip {{flipped ? 'is-flipped' : ''}}">
+        <view
+          class="face face-front card card-{{size}} tint-{{tint}}"
+          bindtap="onTap"
+        >
+          <block wx:if="{{size === 'large'}}">
+            <view class="event">
+              <text class="kind">{{item.kind}}</text>
+              <text class="sep">·</text>
+              <text class="status">{{item.eventStatus}}</text>
+            </view>
+            <text class="title">{{item.title}}</text>
+            <text wx:if="{{item.reason}}" class="reason">{{item.reason}}</text>
+            <text class="action">查看判断 →</text>
+          </block>
+          <block wx:else>
+            <view class="compact-top">
+              <text class="kind">{{item.kind}}</text>
+              <text class="status">{{item.eventStatus}}</text>
+            </view>
+            <view class="compact-bottom">
+              <text class="compact-title">{{displayTitle}}</text>
+              <text class="chevron">›</text>
+            </view>
+          </block>
+        </view>
+
+        <view
+          wx:if="{{size === 'large'}}"
+          class="face face-back card card-large tint-{{tint}}"
+          bindtap="onFlipBack"
+        >
+          <view class="event">
+            <text class="kind">{{item.kind}}</text>
+            <text class="sep">·</text>
+            <text class="status">{{item.eventStatus}}</text>
+          </view>
+          <text class="title">{{item.title}}</text>
+          <text wx:if="{{item.reason}}" class="reason">{{item.reason}}</text>
+          <text class="note">脱水后的来源验证与企业匹配，可进入完整机会查看。</text>
+          <view class="back-actions">
+            <text class="back-link" catchtap="onFlipBack">返回正面</text>
+            <text class="action" catchtap="onOpenDetail">查看机会 →</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>
