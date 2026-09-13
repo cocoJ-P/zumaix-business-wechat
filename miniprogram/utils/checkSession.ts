@@ -1,5 +1,5 @@
 import type { CheckInput, CheckInputKind, InboxItem } from '../types/index'
-import { markInboxAnalyzing } from './workbench'
+import { isHttpUrl, parseCheckInput } from './checkInput'
 
 let pendingCheck: CheckInput | null = null
 
@@ -14,15 +14,14 @@ export function takePendingCheck(): CheckInput | null {
 }
 
 export function startCheckFlow(raw: string, kind?: CheckInputKind): boolean {
-  const trimmed = (raw || '').trim()
-  if (!trimmed) {
-    wx.showToast({ title: '先粘贴或输入内容', icon: 'none' })
+  const parsed = parseCheckInput(raw || '')
+  if ('error' in parsed) {
+    wx.showToast({ title: parsed.error, icon: 'none' })
     return false
   }
-  markInboxAnalyzing(trimmed)
   setPendingCheck({
-    raw: trimmed,
-    kind: kind || (trimmed.indexOf('http') >= 0 ? 'url' : 'text'),
+    raw: parsed.raw,
+    kind: kind === 'url' && isHttpUrl(parsed.raw) ? 'url' : parsed.kind,
   })
   wx.navigateTo({ url: '/pages/check/index' })
   return true

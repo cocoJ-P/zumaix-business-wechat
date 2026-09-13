@@ -6,11 +6,19 @@ declare namespace WechatMiniprogram {
       duration?: number
       mask?: boolean
     }): void
+    setClipboardData(opt: {
+      data: string
+      success?: () => void
+      fail?: () => void
+    }): void
     getClipboardData(opt: {
       success?: (res: { data: string }) => void
       fail?: () => void
       complete?: () => void
     }): void
+    getSystemInfoSync(): {
+      platform: 'devtools' | 'ios' | 'android' | 'windows' | 'mac' | string
+    }
     getMenuButtonBoundingClientRect(): {
       top: number
       bottom: number
@@ -28,6 +36,21 @@ declare namespace WechatMiniprogram {
     navigateBack(opt?: { delta?: number; fail?: () => void }): void
     getStorageSync(key: string): unknown
     setStorageSync(key: string, data: unknown): void
+    request(opt: {
+      url: string
+      method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD' | 'OPTIONS'
+      data?: object | string | ArrayBuffer
+      header?: Record<string, string>
+      timeout?: number
+      dataType?: 'json' | string
+      success?: (res: {
+        data: unknown
+        statusCode: number
+        header: Record<string, string>
+      }) => void
+      fail?: (err: { errMsg: string; errno?: number }) => void
+      complete?: () => void
+    }): void
     chooseMessageFile(opt: {
       count?: number
       type?: 'all' | 'video' | 'image' | 'file'
@@ -65,8 +88,33 @@ declare namespace WechatMiniprogram {
 
 declare const wx: WechatMiniprogram.Wx
 
+declare const console: {
+  log(...args: unknown[]): void
+  warn(...args: unknown[]): void
+  error(...args: unknown[]): void
+}
+
 declare function setTimeout(handler: () => void, timeout?: number): number
 declare function clearTimeout(id: number): void
+
+interface IAppOption {
+  globalData: {
+    backendStatus: 'unknown' | 'checking' | 'connected' | 'unavailable'
+    currentIdentity: {
+      user: { id: string; display_name: string; status: string }
+      enterprise: { id: string; name: string }
+      membership: { id: string; role: string; status: string }
+    } | null
+    identityStatus: 'loading' | 'available' | 'unavailable'
+    identityErrorCode: string | null
+    identityErrorMessage: string | null
+  }
+  preloadBackendConnection(): void
+  refreshBackendHealth(): Promise<void>
+  refreshCurrentIdentity(): Promise<void>
+}
+
+declare function getApp(): IAppOption
 
 declare function App<T extends Record<string, unknown>>(
   options: T & ThisType<T>

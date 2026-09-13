@@ -25,8 +25,11 @@
     analyzingItems="{{inboxAnalyzing}}"
     bind:more="onOpenInbox"
     bind:itemtap="onOpenInboxItem"
-    bind:add="onAddContent"
   />
+
+  <view class="check-entry" bindtap="onAddContent">
+    <text class="check-text">查一个机会</text>
+  </view>
 
   <view class="discover-head">
     <text class="discover-title">为你发现</text>
@@ -92,13 +95,13 @@
 
 <view wx:if="{{composeVisible}}" class="mask" catchtap="onCloseCompose">
   <view class="dialog" catchtap="onDialogTap">
-    <text class="dialog-kicker">添加内容</text>
+    <text class="dialog-kicker">查一个机会</text>
     <textarea
       class="compose"
       value="{{composeText}}"
       maxlength="400"
       auto-height
-      placeholder="粘贴链接或一段说明"
+      placeholder="粘贴链接或正文"
       placeholder-class="compose-ph"
       bindinput="onComposeInput"
     />

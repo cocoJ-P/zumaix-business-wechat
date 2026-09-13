@@ -36,8 +36,5 @@ Component({
       }
       this.triggerEvent('itemtap', { id })
     },
-    onAdd() {
-      this.triggerEvent('add')
-    },
   },
 })

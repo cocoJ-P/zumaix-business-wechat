@@ -1,7 +1,5 @@
 {
   "component": true,
   "styleIsolation": "apply-shared",
-  "usingComponents": {
-    "analyze-checklist": "/components/analyze-checklist/index"
-  }
+  "usingComponents": {}
 }

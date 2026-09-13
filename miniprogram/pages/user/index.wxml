@@ -5,6 +5,31 @@
     <text class="profile-desc">{{enterpriseStage}}</text>
   </view>
 
+  <view class="identity-card">
+    <text class="kicker">开发身份</text>
+    <block wx:if="{{identityStatus === 'loading'}}">
+      <text class="identity-name">身份加载中</text>
+    </block>
+    <block wx:elif="{{identityStatus === 'available'}}">
+      <text class="identity-name">{{identityEnterpriseName}}</text>
+      <text class="identity-user">{{identityUserName}}</text>
+    </block>
+    <block wx:else>
+      <text class="identity-name">身份暂不可用</text>
+      <text wx:if="{{identityErrorMessage}}" class="identity-user">{{identityErrorMessage}}</text>
+    </block>
+    <view class="identity-meta">
+      <text class="identity-env">{{envLabel}}</text>
+      <view class="backend-row">
+        <text class="backend-label">Backend</text>
+        <view class="backend-status backend-status--{{backendStatus}}">
+          <view class="backend-dot"></view>
+          <text>{{backendStatusLabel}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
   <block wx:if="{{viewState === 'loading'}}">
     <view class="section">
       <loading-state text="正在加载" />

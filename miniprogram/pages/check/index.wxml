@@ -1,74 +1,115 @@
 <view class="page">
-  <view wx:if="{{phase === 'invalid'}}" class="invalid">
+  <view wx:if="{{phase === 'idle'}}" class="invalid">
     <empty-state title="没有可查的内容" description="请从首页粘贴链接或正文后再开始查查。" />
     <view class="action">
-      <primary-button text="返回首页" bind:tap="onBackHome" />
+      <primary-button text="返回首页" bind:tap="onNewAnalysis" />
     </view>
   </view>
 
   <view wx:elif="{{phase === 'error'}}" class="invalid">
-    <empty-state title="查查失败" description="这次判断没有完成，请稍后重试。" />
+    <empty-state title="这次没有完成分析" description="{{errorMessage}}" />
     <view class="action">
-      <primary-button text="返回首页" bind:tap="onBackHome" />
+      <primary-button text="重新分析" disabled="{{busy}}" bind:tap="onRetry" />
+    </view>
+    <view class="action">
+      <secondary-button text="分析新内容" bind:tap="onNewAnalysis" />
     </view>
   </view>
 
-  <view wx:elif="{{phase === 'loading'}}" class="loading">
-    <text class="loading-kicker">正在分析</text>
-    <analyze-checklist steps="{{steps}}" />
+  <view wx:elif="{{phase === 'ingesting' || phase === 'analyzing'}}" class="loading">
+    <text class="loading-kicker">{{busyTitle}}</text>
+    <text class="loading-copy">{{busyMessage}}</text>
   </view>
 
-  <view wx:elif="{{result}}" class="result">
-    <text class="eyebrow">你正在查看</text>
-    <text class="headline">{{result.submittedKindLabel}}</text>
+  <view wx:elif="{{phase === 'success'}}" class="result">
+    <text class="eyebrow">当前内容声称</text>
+    <text class="headline">{{view.claimPresent && view.claimTitle ? view.claimTitle : (sourcePreview.title || '查查结果')}}</text>
+    <text wx:if="{{sourcePreview.kind === 'text'}}" class="subhead">粘贴正文</text>
+    <text wx:elif="{{sourcePreview.publisher}}" class="subhead">{{sourcePreview.publisher}}</text>
+    <text wx:if="{{sourcePreview.url}}" class="source-url">{{sourcePreview.url}}</text>
+    <text wx:if="{{sourcePreview.excerpt}}" class="excerpt">{{sourcePreview.excerpt}}</text>
 
-    <view class="facts">
-      <view class="fact">
-        <text class="fact-label">内容性质</text>
-        <text class="fact-value">{{result.natureLabel}}</text>
-      </view>
-      <view wx:if="{{result.marketingLevel}}" class="fact">
-        <text class="fact-label">营销程度</text>
-        <text class="fact-value">{{result.marketingLevel}}</text>
-      </view>
-      <view class="fact">
-        <text class="fact-label">是否存在真实政策</text>
-        <text class="fact-value">{{result.hasRealPolicy ? '是' : '暂未确认'}}</text>
-      </view>
-      <view wx:if="{{result.mustUseAgency}}" class="fact">
-        <text class="fact-label">是否必须通过该机构办理</text>
-        <text class="fact-value">{{result.mustUseAgency}}</text>
-      </view>
-    </view>
+    <block wx:if="{{view.emptyResult}}">
+      <text class="note">分析已完成，但暂时没有可展示的结构化结果。</text>
+    </block>
 
-    <text wx:if="{{result.notOriginal}}" class="note">当前内容不是原始政策</text>
-    <text wx:if="{{result.hasRealPolicy && result.foundOpportunity}}" class="found">{{result.foundMessage}}</text>
-    <text wx:if="{{result.caution}}" class="caution">{{result.caution}}</text>
+    <block wx:else>
+      <view wx:if="{{view.analysisFacts.length}}" class="block">
+        <section-header title="内容判断" />
+        <view class="facts">
+          <view class="fact" wx:for="{{view.analysisFacts}}" wx:key="key">
+            <text class="fact-label">{{item.label}}</text>
+            <text class="fact-value">{{item.value}}</text>
+          </view>
+        </view>
+      </view>
 
-    <view class="block">
-      <source-provenance
-        nodes="{{result.provenance}}"
-        publisher="{{result.officialPublisher}}"
-        document="{{result.officialDocument}}"
-        publishedAt="{{result.publishedAt}}"
-        verified="{{result.verified}}"
-        unverified="{{!result.verified}}"
-        showOfficialAction="{{result.verified}}"
-        bind:official="onOpenOfficial"
-      />
-    </view>
+      <view wx:if="{{view.sourceFacts.length}}" class="block">
+        <section-header title="来源特征" />
+        <view class="facts">
+          <view class="fact" wx:for="{{view.sourceFacts}}" wx:key="key">
+            <text class="fact-label">{{item.label}}</text>
+            <text class="fact-value">{{item.value}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="block">
+        <section-header title="当前内容声称的机会" />
+        <block wx:if="{{view.claimPresent}}">
+          <view class="facts">
+            <view class="fact" wx:for="{{view.claimFacts}}" wx:key="key">
+              <text class="fact-label">{{item.label}}</text>
+              <text class="fact-value">{{item.value}}</text>
+            </view>
+          </view>
+          <text wx:if="{{view.claimSummary}}" class="note">{{view.claimSummary}}</text>
+          <view wx:if="{{view.resources.length}}" class="list">
+            <text class="fact-label">内容中提到的价值</text>
+            <text class="list-item" wx:for="{{view.resources}}" wx:key="*this">{{item}}</text>
+          </view>
+          <text wx:if="{{view.officialUrl}}" class="link" bindtap="onCopyOfficialUrl">内容中提到的官方链接</text>
+        </block>
+        <text wx:else class="note">当前内容中没有识别出足够明确的具体机会</text>
+      </view>
+
+      <view wx:if="{{view.requirements.length}}" class="block">
+        <section-header title="内容中提到的资格条件" />
+        <text class="list-item" wx:for="{{view.requirements}}" wx:key="*this">{{item}}</text>
+      </view>
+
+      <view wx:if="{{view.materials.length}}" class="block">
+        <section-header title="内容中提到的申报材料" actionText="{{showMaterials ? '收起' : '展开'}}" bind:action="onToggleMaterials" />
+        <block wx:if="{{showMaterials}}">
+          <text class="list-item" wx:for="{{view.materials}}" wx:key="*this">{{item}}</text>
+        </block>
+      </view>
+
+      <view wx:if="{{view.process.length}}" class="block">
+        <section-header title="内容中提到的申报流程" actionText="{{showProcess ? '收起' : '展开'}}" bind:action="onToggleProcess" />
+        <block wx:if="{{showProcess}}">
+          <text class="list-item" wx:for="{{view.process}}" wx:key="*this">{{item}}</text>
+        </block>
+      </view>
+
+      <view wx:if="{{view.evidence.length}}" class="block">
+        <section-header title="分析依据" />
+        <view class="evidence" wx:for="{{view.evidence}}" wx:key="key">
+          <text class="fact-label">{{item.kindLabel}}</text>
+          <text class="evidence-text">{{item.text}}</text>
+        </view>
+      </view>
+
+      <view wx:if="{{view.warnings.length}}" class="block">
+        <section-header title="需要注意" />
+        <text class="caution" wx:for="{{view.warnings}}" wx:key="*this">{{item}}</text>
+      </view>
+    </block>
+
+    <text class="disclaimer">当前结果是对输入内容的结构化理解，不代表机会真实性已经完成验证。</text>
 
     <view class="action">
-      <primary-button
-        wx:if="{{result.foundOpportunity && result.verified}}"
-        text="查看真实机会"
-        bind:tap="onOpenOpportunity"
-      />
-      <secondary-button
-        wx:elif="{{result.opportunityId}}"
-        text="查看识别结果"
-        bind:tap="onOpenOpportunity"
-      />
+      <secondary-button text="分析新内容" bind:tap="onNewAnalysis" />
     </view>
   </view>
 </view>

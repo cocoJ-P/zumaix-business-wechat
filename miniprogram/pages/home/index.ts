@@ -365,7 +365,10 @@ Page({
   },
 
   onAddContent() {
-    this.setData({ sheetVisible: true })
+    this.setData({
+      composeVisible: true,
+      composeText: '',
+    })
   },
 
   onCloseSheet() {

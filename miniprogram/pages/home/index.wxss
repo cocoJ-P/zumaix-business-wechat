@@ -80,6 +80,24 @@ page {
   letter-spacing: 0.04em;
 }
 
+.check-entry {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 16rpx;
+  padding: 22rpx 24rpx;
+  background: var(--brand-light);
+  border-radius: var(--radius-lg);
+}
+
+.check-text {
+  font-size: var(--font-md);
+  font-weight: var(--font-medium);
+  color: var(--brand-primary);
+  line-height: 1.2;
+}
+
 .discover-head {
   display: flex;
   align-items: baseline;
