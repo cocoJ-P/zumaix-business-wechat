@@ -1,9 +1,7 @@
 <view class="bar">
   <view class="head" bindtap="onOpenAll">
     <view class="head-left">
-      <text class="meta">
-        {{done}} 条已完成<text wx:if="{{analyzing}}"> · {{analyzing}} 条正在分析</text><text wx:if="{{waiting}}"> · {{waiting}} 条等待中</text>
-      </text>
+      <text class="meta">为您推荐</text>
     </view>
     <text class="more">全部</text>
   </view>
