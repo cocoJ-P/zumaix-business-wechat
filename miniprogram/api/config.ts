@@ -75,11 +75,11 @@ export const DEV_USER_ID: string | undefined = configuredDevUserId || undefined
 /** 普通 Backend API 默认超时。单个请求可通过 request({ timeout }) 覆盖。 */
 export const REQUEST_TIMEOUT_MS = 12_000
 
-/** Content Ingest 单独超时，不改全局默认。 */
-export const INGEST_TIMEOUT_MS = 30_000
+/** 创建 UserSubmission 只写库，短超时即可。 */
+export const CREATE_SUBMISSION_TIMEOUT_MS = 12_000
 
-/** Intelligence Analyze 单独超时。小程序 wx.request 上限约 60s，取 55s。 */
-export const ANALYZE_TIMEOUT_MS = 55_000
+/** Process 含抓取 + Intelligence。遵守微信 wx.request 上限约 60s。 */
+export const PROCESS_SUBMISSION_TIMEOUT_MS = 60_000
 
 export const DEV_USER_HEADER = 'X-Dev-User-Id'
 

@@ -5,10 +5,10 @@
 当前阶段：
 
 ```text
-D1.2 Mini Program Intelligence Integration
+D2.2 Mini Program Submission Write-through
 ```
 
-「查一个机会」已接入真实 Backend。首页「为你发现」、机会 Tab 仍基于 Mock Data。
+「查一个机会」通过 UserSubmission 写入筑脉企服 Backend。首页「为你发现」、机会 Tab 仍基于 Mock Data。
 
 用微信开发者工具打开本目录即可编译预览。AppID 已保留在 `project.config.json`。
 
@@ -33,6 +33,8 @@ API_ENV = 'development' | 'staging' | 'production'
 API_BASE_URL
 DEV_USER_ID
 REQUEST_TIMEOUT_MS
+CREATE_SUBMISSION_TIMEOUT_MS
+PROCESS_SUBMISSION_TIMEOUT_MS
 ```
 
 切换环境时只改 `API_ENV`（以及对应环境的 Base URL），不要改页面代码。
@@ -133,29 +135,47 @@ DEV_USER_ID
 
 ## Intelligence Integration
 
-「查一个机会」已接入筑脉企服 Backend：
+「查一个机会」通过 UserSubmission 写入筑脉企服 Backend：
 
 ```text
 URL / Text
 ↓
-POST /api/content/ingest
+POST /api/user-submissions
 ↓
-POST /api/opportunity-sources/{source_id}/analyze
+POST /api/user-submissions/{id}/process
 ↓
-ContentIntelligenceResult
+Backend internally: Content Ingestion + Opportunity Intelligence
+↓
+UserSubmissionDetail
+↓
+Result
 ```
 
+小程序不再编排 Content / Intelligence。唯一业务入口是 Backend 的 UserSubmission Orchestrator。
+
 当前结果是对输入内容的结构化理解，不代表机会真实性已经完成验证。
+
+Retry：
+
+```text
+Create fail → 重新 POST /api/user-submissions
+Process fail → 同一 submission_id 再 POST /process
+Process timeout / 网络不确定 → 先 GET /api/user-submissions/{id}
+仍在 ingesting / analyzing → 只检查结果，不再次 process
+```
 
 尚未实现：
 
 ```text
-Web Search
+Submission History
+Discovery
+Push
+User Feedback Persistence
+Matching
+Lead
 Verification
 Opportunity Resolution
-Matching
-Discovery
-Lead
+正式 Auth / OnePass
 ```
 
 首页「为你发现」、机会 Tab、「我的」线索仍是 Mock。
@@ -163,5 +183,5 @@ Lead
 下一阶段：
 
 ```text
-D2 User Submission Loop
+D2.3 Service Frontend Submission Workspace
 ```

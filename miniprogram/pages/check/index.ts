@@ -1,19 +1,22 @@
-import { ingestContent } from '../../api/content'
 import { ApiError, toApiError } from '../../api/errors'
-import { analyzeOpportunitySource } from '../../api/intelligence'
+import {
+  createUserSubmission,
+  getUserSubmission,
+  processUserSubmission,
+} from '../../api/submissions'
+import type { UserSubmissionDetail } from '../../api/types'
 import type { CheckInput } from '../../types/index'
-import { takePendingCheck } from '../../utils/checkSession'
+import { releaseCheckFlowLock, takePendingCheck } from '../../utils/checkSession'
 import {
   emptyIntelligenceView,
   getCheckErrorMessage,
-  mapIntelligenceResultToViewModel,
-  mapSourcePreview,
+  mapSubmissionDetailToIntelligenceViewModel,
 } from '../../utils/intelligenceView'
 import type {
   CheckPhase,
+  ErrorAction,
   ErrorStage,
   IntelligenceViewModel,
-  SourcePreviewView,
 } from '../../utils/intelligenceView'
 
 type CheckData = {
@@ -23,35 +26,23 @@ type CheckData = {
   busyMessage: string
   errorMessage: string
   errorStage: ErrorStage
-  sourcePreview: SourcePreviewView
+  errorAction: ErrorAction
+  retryButtonText: string
   view: IntelligenceViewModel
   showMaterials: boolean
   showProcess: boolean
 }
 
-function busyCopy(phase: 'ingesting' | 'analyzing', kind: CheckInput['kind']): {
-  busyTitle: string
-  busyMessage: string
-} {
-  if (phase === 'ingesting') {
-    if (kind === 'url') {
-      return {
-        busyTitle: '正在解析',
-        busyMessage: '正在读取网页并提取正文…',
-      }
-    }
-    return {
-      busyTitle: '正在解析',
-      busyMessage: '正在整理正文内容…',
-    }
-  }
-  return {
-    busyTitle: '内容已解析',
-    busyMessage: '正在理解其中的机会信息…',
-  }
+function isAmbiguousNetworkError(error: ApiError): boolean {
+  return error.code === 'REQUEST_TIMEOUT' || error.code === 'NETWORK_ERROR'
 }
 
 Page({
+  _alive: false,
+  _flowLock: false,
+  _input: undefined as CheckInput | undefined,
+  _submissionId: undefined as string | undefined,
+
   data: {
     phase: 'idle',
     busy: false,
@@ -59,7 +50,8 @@ Page({
     busyMessage: '',
     errorMessage: '',
     errorStage: null,
-    sourcePreview: emptyIntelligenceView().sourcePreview,
+    errorAction: 'retry',
+    retryButtonText: '重新分析',
     view: emptyIntelligenceView(),
     showMaterials: false,
     showProcess: false,
@@ -73,12 +65,13 @@ Page({
       return
     }
     this._input = input
-    this._ingest = null
-    void this.startIngest()
+    this._submissionId = undefined
+    void this.startCreate()
   },
 
   onUnload() {
     this._alive = false
+    releaseCheckFlowLock()
   },
 
   safeSetData(patch: Partial<CheckData> | Record<string, unknown>) {
@@ -88,144 +81,321 @@ Page({
     this.setData(patch)
   },
 
-  startIngest() {
+  unlockFlow() {
+    this._flowLock = false
+  },
+
+  startCreate() {
     const input = this._input
-    if (!input || this.data.busy) {
+    if (!input || this._flowLock) {
       return
     }
-    const copy = busyCopy('ingesting', input.kind)
+    this._flowLock = true
+    this._submissionId = undefined
     this.safeSetData({
-      phase: 'ingesting',
+      phase: 'creating',
       busy: true,
-      busyTitle: copy.busyTitle,
-      busyMessage: copy.busyMessage,
+      busyTitle: '正在提交查查任务…',
+      busyMessage: '',
       errorMessage: '',
       errorStage: null,
+      errorAction: 'retry',
+      retryButtonText: '重新分析',
       view: emptyIntelligenceView(),
       showMaterials: false,
       showProcess: false,
     })
-    void this.runIngest(input)
+    void this.runCreate(input)
   },
 
-  async runIngest(input: CheckInput) {
+  async runCreate(input: CheckInput) {
     try {
-      const ingest = await ingestContent({
-        content_type: input.kind,
+      const created = await createUserSubmission({
+        input_type: input.kind,
         content: input.raw,
       })
       if (!this._alive) {
         return
       }
-      this._ingest = ingest
-      this._sourceId = ingest.source.id
-      this._ingestionId = ingest.ingestion.id
-      this.safeSetData({
-        sourcePreview: mapSourcePreview(ingest),
-      })
-      await this.runAnalyze()
+      this._submissionId = created.id
+      await this.runProcess()
     } catch (error) {
-      this.fail('ingest', error)
+      this.failCreate(error)
     }
   },
 
-  startAnalyzeOnly() {
-    if (this.data.busy || !this._sourceId || !this._ingestionId) {
+  startProcessOnly() {
+    if (this._flowLock || !this._submissionId) {
       return
     }
-    const input = this._input
-    const copy = busyCopy('analyzing', input ? input.kind : 'text')
+    this._flowLock = true
     this.safeSetData({
-      phase: 'analyzing',
+      phase: 'processing',
       busy: true,
-      busyTitle: copy.busyTitle,
-      busyMessage: copy.busyMessage,
+      busyTitle: '正在读取并分析这条内容…',
+      busyMessage: '网页读取和智能分析可能需要一些时间',
       errorMessage: '',
     })
-    void this.runAnalyze()
+    void this.runProcess()
   },
 
-  async runAnalyze() {
-    const sourceId = this._sourceId
-    const ingestionId = this._ingestionId
-    const ingest = this._ingest
-    if (!sourceId || !ingestionId || !ingest) {
-      this.fail('analyze', new ApiError({
+  async runProcess() {
+    const submissionId = this._submissionId
+    if (!submissionId) {
+      this.failCreate(new ApiError({
         code: 'UNKNOWN_ERROR',
-        message: '分析上下文丢失，请重新提交内容',
+        message: '查查记录尚未创建，请重新发起',
       }))
       return
     }
-    const copy = busyCopy('analyzing', this._input ? this._input.kind : 'text')
     this.safeSetData({
-      phase: 'analyzing',
+      phase: 'processing',
       busy: true,
-      busyTitle: copy.busyTitle,
-      busyMessage: copy.busyMessage,
+      busyTitle: '正在读取并分析这条内容…',
+      busyMessage: '网页读取和智能分析可能需要一些时间',
     })
     try {
-      const analyze = await analyzeOpportunitySource(sourceId, {
-        ingestion_id: ingestionId,
-        force: false,
-      })
+      const detail = await processUserSubmission(submissionId)
       if (!this._alive) {
         return
       }
-      if (analyze.run.status !== 'succeeded') {
-        throw new ApiError({
-          code: analyze.run.error_code || 'LLM_PROVIDER_ERROR',
-          message: analyze.run.error_message || '智能分析服务暂时不可用',
-        })
-      }
+      this.applyProcessDetail(detail)
+    } catch (error) {
+      this.failProcess(error)
+    }
+  },
+
+  applyProcessDetail(detail: UserSubmissionDetail) {
+    const localId = this._submissionId
+    if (localId && detail.submission.id !== localId) {
+      console.error(`[check] submission id mismatch local=${localId} remote=${detail.submission.id}`)
+      this.unlockFlow()
+      this.safeSetData({
+        phase: 'error',
+        busy: false,
+        errorStage: 'process',
+        errorAction: 'retry',
+        retryButtonText: '重新分析',
+        errorMessage: '当前查查记录状态异常，请稍后重试。',
+      })
+      return
+    }
+    this.applySubmissionDetail(detail, 'process')
+  },
+
+  applySubmissionDetail(detail: UserSubmissionDetail, from: 'process' | 'get') {
+    const status = detail.submission.status
+    if (status === 'succeeded') {
+      this.unlockFlow()
       this.safeSetData({
         phase: 'success',
         busy: false,
         errorStage: null,
         errorMessage: '',
-        view: mapIntelligenceResultToViewModel(ingest, analyze),
+        view: mapSubmissionDetailToIntelligenceViewModel(detail),
         showMaterials: false,
         showProcess: false,
       })
-    } catch (error) {
-      this.fail('analyze', error)
+      return
     }
-  },
-
-  fail(stage: 'ingest' | 'analyze', error: unknown) {
-    const apiError = toApiError(error)
-    const kind = this._input ? this._input.kind : 'text'
-    console.warn(`[check] ${stage} ${apiError.code}`)
+    if (status === 'failed') {
+      const code = detail.submission.error_code || 'SUBMISSION_PROCESSING_FAILED'
+      const kind = this._input ? this._input.kind : 'text'
+      this.unlockFlow()
+      this.safeSetData({
+        phase: 'error',
+        busy: false,
+        errorStage: 'process',
+        errorAction: 'retry',
+        retryButtonText: '重新分析',
+        errorMessage: getCheckErrorMessage(
+          new ApiError({
+            code,
+            message: detail.submission.error_message || '查查处理暂时失败，请稍后重试。',
+          }),
+          'process',
+          kind
+        ),
+      })
+      return
+    }
+    if (status === 'ingesting' || status === 'analyzing') {
+      this.unlockFlow()
+      this.safeSetData({
+        phase: 'error',
+        busy: false,
+        errorStage: 'process',
+        errorAction: 'check',
+        retryButtonText: '检查结果',
+        errorMessage: from === 'get'
+          ? '这次查查仍在处理中，请稍后再检查。'
+          : '任务仍在处理中，请稍后重试',
+      })
+      return
+    }
+    this.unlockFlow()
     this.safeSetData({
       phase: 'error',
       busy: false,
-      errorStage: stage,
-      errorMessage: getCheckErrorMessage(apiError, stage, kind),
+      errorStage: 'process',
+      errorAction: from === 'get' ? 'retry' : 'check',
+      retryButtonText: from === 'get' ? '重新分析' : '检查结果',
+      errorMessage: '任务仍在处理中，请稍后重试',
+    })
+  },
+
+  failCreate(error: unknown) {
+    const apiError = toApiError(error)
+    const kind = this._input ? this._input.kind : 'text'
+    console.warn(`[check] create ${apiError.code}`)
+    this._submissionId = undefined
+    this.unlockFlow()
+    this.safeSetData({
+      phase: 'error',
+      busy: false,
+      errorStage: 'create',
+      errorAction: 'retry',
+      retryButtonText: '重新分析',
+      errorMessage: getCheckErrorMessage(apiError, 'create', kind),
+    })
+  },
+
+  failProcess(error: unknown) {
+    const apiError = toApiError(error)
+    const kind = this._input ? this._input.kind : 'text'
+    if (apiError.code === 'SUBMISSION_STATE_INVALID') {
+      console.error(`[check] ${apiError.code}`)
+    } else {
+      console.warn(`[check] process ${apiError.code}`)
+    }
+    if (apiError.code === 'SUBMISSION_NOT_FOUND') {
+      this._submissionId = undefined
+      this.unlockFlow()
+      this.safeSetData({
+        phase: 'error',
+        busy: false,
+        errorStage: 'create',
+        errorAction: 'retry',
+        retryButtonText: '重新分析',
+        errorMessage: getCheckErrorMessage(apiError, 'process', kind),
+      })
+      return
+    }
+    if (apiError.code === 'SUBMISSION_ALREADY_PROCESSING') {
+      this.unlockFlow()
+      this.safeSetData({
+        phase: 'error',
+        busy: false,
+        errorStage: 'process',
+        errorAction: 'check',
+        retryButtonText: '检查结果',
+        errorMessage: getCheckErrorMessage(apiError, 'process', kind),
+      })
+      return
+    }
+    if (this._submissionId && isAmbiguousNetworkError(apiError)) {
+      this.unlockFlow()
+      this.safeSetData({
+        phase: 'error',
+        busy: false,
+        errorStage: 'process',
+        errorAction: 'check',
+        retryButtonText: '检查结果',
+        errorMessage: '本次处理状态暂时无法确认，可以重新检查。',
+      })
+      return
+    }
+    this.unlockFlow()
+    this.safeSetData({
+      phase: 'error',
+      busy: false,
+      errorStage: 'process',
+      errorAction: 'retry',
+      retryButtonText: '重新分析',
+      errorMessage: getCheckErrorMessage(apiError, 'process', kind),
     })
   },
 
   onRetry() {
-    if (this.data.busy) {
+    if (this._flowLock) {
       return
     }
-    if (this.data.errorStage === 'analyze' && this._sourceId && this._ingestionId) {
-      this.startAnalyzeOnly()
+    if (this.data.errorAction === 'check') {
+      void this.checkResult()
       return
     }
-    this.startIngest()
+    if (this.data.errorStage === 'process' && this._submissionId) {
+      this.startProcessOnly()
+      return
+    }
+    this.startCreate()
+  },
+
+  async checkResult() {
+    const submissionId = this._submissionId
+    if (!submissionId || this._flowLock) {
+      return
+    }
+    this._flowLock = true
+    this.safeSetData({
+      busy: true,
+      busyTitle: '正在检查结果…',
+      busyMessage: '',
+    })
+    try {
+      const detail = await getUserSubmission(submissionId)
+      if (!this._alive) {
+        return
+      }
+      this.applySubmissionDetail(detail, 'get')
+    } catch (error) {
+      const apiError = toApiError(error)
+      const kind = this._input ? this._input.kind : 'text'
+      if (apiError.code === 'SUBMISSION_STATE_INVALID') {
+        console.error(`[check] ${apiError.code}`)
+      } else {
+        console.warn(`[check] get ${apiError.code}`)
+      }
+      if (apiError.code === 'SUBMISSION_NOT_FOUND') {
+        this._submissionId = undefined
+        this.unlockFlow()
+        this.safeSetData({
+          phase: 'error',
+          busy: false,
+          errorStage: 'create',
+          errorAction: 'retry',
+          retryButtonText: '重新分析',
+          errorMessage: getCheckErrorMessage(apiError, 'process', kind),
+        })
+        return
+      }
+      this.unlockFlow()
+      this.safeSetData({
+        phase: 'error',
+        busy: false,
+        errorStage: 'process',
+        errorAction: 'check',
+        retryButtonText: '检查结果',
+        errorMessage: getCheckErrorMessage(apiError, 'process', kind),
+      })
+    }
   },
 
   onNewAnalysis() {
+    if (this._flowLock) {
+      return
+    }
     this._input = undefined
-    this._ingest = null
-    this._sourceId = undefined
-    this._ingestionId = undefined
+    this._submissionId = undefined
+    this.unlockFlow()
     this.safeSetData({
       phase: 'idle',
       busy: false,
       errorMessage: '',
       errorStage: null,
+      errorAction: 'retry',
+      retryButtonText: '重新分析',
       view: emptyIntelligenceView(),
-      sourcePreview: emptyIntelligenceView().sourcePreview,
       showMaterials: false,
       showProcess: false,
     })

@@ -3,14 +3,15 @@ import type {
   ClaimedRequirement,
   ClaimedResourceValue,
   ContentInputType,
-  IngestResponse,
-  IntelligenceAnalyzeResponse,
+  ContentIntelligenceResult,
   IntelligenceEvidence,
   OpportunityClaim,
+  UserSubmissionDetail,
 } from '../api/types'
 
-export type CheckPhase = 'idle' | 'ingesting' | 'analyzing' | 'success' | 'error'
-export type ErrorStage = 'ingest' | 'analyze' | null
+export type CheckPhase = 'idle' | 'creating' | 'processing' | 'success' | 'error'
+export type ErrorStage = 'create' | 'process' | null
+export type ErrorAction = 'retry' | 'check'
 
 export type SourcePreviewView = {
   kind: ContentInputType
@@ -147,6 +148,11 @@ const ERROR_MESSAGE: Record<string, string> = {
   LLM_PROVIDER_ERROR: '智能分析服务暂时不可用',
   LLM_STRUCTURED_OUTPUT_ERROR: '智能分析结果异常，请重试',
   LLM_SCHEMA_VALIDATION_ERROR: '智能分析结果未通过结构校验，请重试',
+  SUBMISSION_ALREADY_PROCESSING: '这次查查仍在处理中，请稍后检查结果。',
+  SUBMISSION_STATE_INVALID: '当前查查记录状态异常，请稍后重试。',
+  SUBMISSION_NOT_FOUND: '这次查查记录已不可用，请重新发起。',
+  INVALID_SUBMISSION_INPUT: '提交内容格式不正确，请检查后重试。',
+  SUBMISSION_PROCESSING_FAILED: '查查处理暂时失败，请稍后重试。',
 }
 
 function lookup(table: Record<string, string>, value: string | null | undefined): string {
@@ -280,32 +286,39 @@ function mapClaimFacts(claim: OpportunityClaim): FactView[] {
   return facts
 }
 
-export function mapSourcePreview(ingest: IngestResponse): SourcePreviewView {
-  const content = ingest.normalized_content
-  if (content.input_type === 'text') {
+export function mapSubmissionDetailToIntelligenceViewModel(
+  detail: UserSubmissionDetail
+): IntelligenceViewModel {
+  const sourcePreview = mapSourcePreviewFromDetail(detail)
+  const result = detail.intelligence ? detail.intelligence.result : null
+  return mapResultToViewModel(sourcePreview, result)
+}
+
+function mapSourcePreviewFromDetail(detail: UserSubmissionDetail): SourcePreviewView {
+  const content = detail.content
+  const inputType = detail.submission.input_type
+  if (inputType === 'text') {
     return {
       kind: 'text',
-      title: '粘贴正文',
-      publisher: '',
+      title: textValue(content && content.title) || '粘贴正文',
+      publisher: textValue(content && content.publisher),
       url: '',
-      excerpt: textValue(content.excerpt),
+      excerpt: textValue(content && content.excerpt),
     }
   }
   return {
     kind: 'url',
-    title: textValue(content.title) || textValue(ingest.source.title),
-    publisher: textValue(content.publisher) || textValue(ingest.source.publisher),
-    url: textValue(content.resolved_url) || textValue(content.source_url),
-    excerpt: textValue(content.excerpt),
+    title: textValue(content && content.title),
+    publisher: textValue(content && content.publisher),
+    url: textValue(content && content.resolved_url),
+    excerpt: textValue(content && content.excerpt),
   }
 }
 
-export function mapIntelligenceResultToViewModel(
-  ingest: IngestResponse,
-  analyze: IntelligenceAnalyzeResponse
+function mapResultToViewModel(
+  sourcePreview: SourcePreviewView,
+  result: ContentIntelligenceResult | null
 ): IntelligenceViewModel {
-  const sourcePreview = mapSourcePreview(ingest)
-  const result = analyze.intelligence_result
   if (!result) {
     return {
       sourcePreview,
@@ -411,11 +424,14 @@ export function mapIntelligenceResultToViewModel(
 
 export function getCheckErrorMessage(
   error: ApiError,
-  phase: 'ingest' | 'analyze',
+  phase: 'create' | 'process',
   inputMode: ContentInputType
 ): string {
-  if (error.code === 'REQUEST_TIMEOUT' && phase === 'analyze') {
-    return '智能分析耗时较长，请稍后重试'
+  if (error.code === 'REQUEST_TIMEOUT' && phase === 'process') {
+    return '本次处理状态暂时无法确认，可以重新检查。'
+  }
+  if (error.code === 'REQUEST_TIMEOUT' && phase === 'create') {
+    return '提交超时，请稍后重试'
   }
   if (error.code === 'NETWORK_ERROR') {
     return '无法连接筑脉企服 Backend'
@@ -426,9 +442,6 @@ export function getCheckErrorMessage(
       return error.message || '输入内容不正确'
     }
     return mapped
-  }
-  if (phase === 'ingest' && inputMode === 'url') {
-    return '无法读取该网页'
   }
   return error.message || '请求失败，请稍后重试'
 }

@@ -9,25 +9,25 @@
   <view wx:elif="{{phase === 'error'}}" class="invalid">
     <empty-state title="这次没有完成分析" description="{{errorMessage}}" />
     <view class="action">
-      <primary-button text="重新分析" disabled="{{busy}}" bind:tap="onRetry" />
+      <primary-button text="{{retryButtonText}}" disabled="{{busy}}" bind:tap="onRetry" />
     </view>
     <view class="action">
-      <secondary-button text="分析新内容" bind:tap="onNewAnalysis" />
+      <secondary-button text="分析新内容" disabled="{{busy}}" bind:tap="onNewAnalysis" />
     </view>
   </view>
 
-  <view wx:elif="{{phase === 'ingesting' || phase === 'analyzing'}}" class="loading">
+  <view wx:elif="{{phase === 'creating' || phase === 'processing'}}" class="loading">
     <text class="loading-kicker">{{busyTitle}}</text>
-    <text class="loading-copy">{{busyMessage}}</text>
+    <text wx:if="{{busyMessage}}" class="loading-copy">{{busyMessage}}</text>
   </view>
 
   <view wx:elif="{{phase === 'success'}}" class="result">
     <text class="eyebrow">当前内容声称</text>
-    <text class="headline">{{view.claimPresent && view.claimTitle ? view.claimTitle : (sourcePreview.title || '查查结果')}}</text>
-    <text wx:if="{{sourcePreview.kind === 'text'}}" class="subhead">粘贴正文</text>
-    <text wx:elif="{{sourcePreview.publisher}}" class="subhead">{{sourcePreview.publisher}}</text>
-    <text wx:if="{{sourcePreview.url}}" class="source-url">{{sourcePreview.url}}</text>
-    <text wx:if="{{sourcePreview.excerpt}}" class="excerpt">{{sourcePreview.excerpt}}</text>
+    <text class="headline">{{view.claimPresent && view.claimTitle ? view.claimTitle : (view.sourcePreview.title || '查查结果')}}</text>
+    <text wx:if="{{view.sourcePreview.kind === 'text'}}" class="subhead">粘贴正文</text>
+    <text wx:elif="{{view.sourcePreview.publisher}}" class="subhead">{{view.sourcePreview.publisher}}</text>
+    <text wx:if="{{view.sourcePreview.url}}" class="source-url">{{view.sourcePreview.url}}</text>
+    <text wx:if="{{view.sourcePreview.excerpt}}" class="excerpt">{{view.sourcePreview.excerpt}}</text>
 
     <block wx:if="{{view.emptyResult}}">
       <text class="note">分析已完成，但暂时没有可展示的结构化结果。</text>

@@ -60,51 +60,6 @@ export const INITIAL_APP_GLOBAL_DATA: AppGlobalData = {
 
 export type ContentInputType = 'url' | 'text'
 
-export type IngestRequest = {
-  content_type: ContentInputType
-  content: string
-}
-
-export type NormalizedContent = {
-  input_type: ContentInputType
-  title?: string | null
-  publisher?: string | null
-  resolved_url?: string | null
-  source_url?: string | null
-  excerpt?: string | null
-  fetch_status: string
-  extraction_status: string
-  warnings?: string[] | null
-}
-
-export type IngestSource = {
-  id: string
-  title?: string | null
-  publisher?: string | null
-}
-
-export type IngestedContent = {
-  id: string
-}
-
-export type IngestResponse = {
-  normalized_content: NormalizedContent
-  source: IngestSource
-  ingestion: IngestedContent
-}
-
-export type AnalyzeRequest = {
-  ingestion_id: string
-  force: boolean
-}
-
-export type IntelligenceRun = {
-  id: string
-  status: string
-  error_code?: string | null
-  error_message?: string | null
-}
-
 export type IntelligenceAnalysis = {
   content_nature: string
   opportunity_relevance: string
@@ -168,8 +123,64 @@ export type ContentIntelligenceResult = {
   evidence: IntelligenceEvidence[]
 }
 
-export type IntelligenceAnalyzeResponse = {
-  run: IntelligenceRun
-  reused: boolean
-  intelligence_result: ContentIntelligenceResult | null
+export type SubmissionStatus =
+  | 'pending'
+  | 'ingesting'
+  | 'analyzing'
+  | 'succeeded'
+  | 'failed'
+
+export type SubmissionFailureStage = 'ingest' | 'analyze' | null
+
+export type CreateUserSubmissionRequest = {
+  input_type: ContentInputType
+  content: string
+}
+
+export type SubmissionActor = {
+  id: string
+  display_name: string
+}
+
+export type CreateUserSubmissionResponse = {
+  id: string
+  status: SubmissionStatus
+  input_type: ContentInputType
+  input_preview: string
+  created_at: string
+  user: SubmissionActor
+  enterprise: CurrentIdentityEnterprise
+}
+
+export type UserSubmission = {
+  id: string
+  status: SubmissionStatus
+  failure_stage: SubmissionFailureStage
+  input_type: ContentInputType
+  error_code?: string | null
+  error_message?: string | null
+}
+
+export type SubmissionContentSummary = {
+  title?: string | null
+  publisher?: string | null
+  resolved_url?: string | null
+  excerpt?: string | null
+  fetch_status?: string | null
+  extraction_status?: string | null
+  warnings?: string[]
+}
+
+export type SubmissionIntelligenceSummary = {
+  run_id: string
+  status: string
+  result: ContentIntelligenceResult | null
+}
+
+export type UserSubmissionDetail = {
+  submission: UserSubmission
+  submitted_by?: SubmissionActor
+  enterprise?: CurrentIdentityEnterprise
+  content: SubmissionContentSummary | null
+  intelligence: SubmissionIntelligenceSummary | null
 }

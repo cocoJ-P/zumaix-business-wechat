@@ -2,6 +2,7 @@ import type { CheckInput, CheckInputKind, InboxItem } from '../types/index'
 import { isHttpUrl, parseCheckInput } from './checkInput'
 
 let pendingCheck: CheckInput | null = null
+let checkFlowLocked = false
 
 export function setPendingCheck(input: CheckInput): void {
   pendingCheck = input
@@ -13,7 +14,14 @@ export function takePendingCheck(): CheckInput | null {
   return current
 }
 
+export function releaseCheckFlowLock(): void {
+  checkFlowLocked = false
+}
+
 export function startCheckFlow(raw: string, kind?: CheckInputKind): boolean {
+  if (checkFlowLocked) {
+    return false
+  }
   const parsed = parseCheckInput(raw || '')
   if ('error' in parsed) {
     wx.showToast({ title: parsed.error, icon: 'none' })
@@ -23,7 +31,14 @@ export function startCheckFlow(raw: string, kind?: CheckInputKind): boolean {
     raw: parsed.raw,
     kind: kind === 'url' && isHttpUrl(parsed.raw) ? 'url' : parsed.kind,
   })
-  wx.navigateTo({ url: '/pages/check/index' })
+  checkFlowLocked = true
+  wx.navigateTo({
+    url: '/pages/check/index',
+    fail: () => {
+      pendingCheck = null
+      checkFlowLocked = false
+    },
+  })
   return true
 }
 
