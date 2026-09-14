@@ -1,12 +1,10 @@
+import { listDiscoveries } from '../../api/discoveries'
+import { toApiError } from '../../api/errors'
 import type { DiscoveryItem, HomeViewState } from '../../types/index'
 import { HOME_VIEW_STATE } from '../../mock/homeState'
 import {
   addInboxEntry,
-  addToInboxFromDiscovery,
   advanceAnalyzingItems,
-  deprioritizeDiscovery,
-  getDeprioritizedDiscoveries,
-  getFeaturedDiscoveries,
   getInboxAnalyzingItems,
   getInboxPreviewItems,
   getInboxSummary,
@@ -15,7 +13,11 @@ import {
 } from '../../utils/workbench'
 import type { InboxSummary, InboxViewItem } from '../../utils/workbench'
 import { ANALYZE_STEP_DELAY_MS } from '../../utils/analyzeSteps'
-import { startCheckFlow, openOpportunityDetail, openInboxEntry } from '../../utils/checkSession'
+import { startCheckFlow, openInboxEntry } from '../../utils/checkSession'
+import {
+  getDiscoveryFeedErrorMessage,
+  mapDiscoveryListToCardViewModels,
+} from '../../utils/discoveryView'
 
 type GestureState = {
   active: boolean
@@ -35,12 +37,17 @@ const IDLE_GESTURE: GestureState = {
   committed: false,
 }
 
+type DiscoveryFeedState = 'idle' | 'loading' | 'ready' | 'empty' | 'error' | 'exhausted'
+
 type HomeData = {
   paddingTopPx: number
   viewState: HomeViewState
   inbox: InboxSummary
   inboxPreview: InboxViewItem[]
   inboxAnalyzing: InboxViewItem[]
+  discoveryFeedState: DiscoveryFeedState
+  discoveryErrorMessage: string
+  discoveryRefreshing: boolean
   featuredIndex: number
   featuredTotal: number
   featuredCursor: number
@@ -74,44 +81,58 @@ function previewText(raw: string): string {
   return `${compact.slice(0, 48)}……`
 }
 
-function deckAt(cursor: number): Pick<
-  HomeData,
-  | 'inbox'
-  | 'inboxPreview'
-  | 'inboxAnalyzing'
-  | 'featuredIndex'
-  | 'featuredTotal'
-  | 'featuredCursor'
-  | 'current'
-  | 'next'
-  | 'low'
-> {
-  const featured = getFeaturedDiscoveries()
-  const total = featured.length
-  const index = total ? cursor % total : 0
+function inboxSnapshot(): Pick<HomeData, 'inbox' | 'inboxPreview' | 'inboxAnalyzing'> {
   return {
     inbox: getInboxSummary(),
     inboxPreview: getInboxPreviewItems(),
     inboxAnalyzing: getInboxAnalyzingItems(),
+  }
+}
+
+function deckSnapshot(
+  items: DiscoveryItem[],
+  cursor: number
+): Pick<HomeData, 'featuredIndex' | 'featuredTotal' | 'featuredCursor' | 'current' | 'next'> {
+  const total = items.length
+  if (!total) {
+    return {
+      featuredCursor: 0,
+      featuredIndex: 0,
+      featuredTotal: 0,
+      current: null,
+      next: null,
+    }
+  }
+  const index = Math.min(Math.max(cursor, 0), total - 1)
+  return {
     featuredCursor: index,
-    featuredIndex: total ? index + 1 : 0,
+    featuredIndex: index + 1,
     featuredTotal: total,
-    current: total ? featured[index] : null,
-    next: total > 1 ? featured[(index + 1) % total] : null,
-    low: getDeprioritizedDiscoveries(),
+    current: items[index],
+    next: index + 1 < total ? items[index + 1] : null,
   }
 }
 
 const dismissedContent = new Set<string>()
 const acceptedContent = new Set<string>()
 
+let discoveryDeck: DiscoveryItem[] = []
+let discoveryLoaded = false
+let feedLock = false
+
 Page({
+  _gestureTimer: 0,
+  _inboxTimer: 0,
+
   data: {
     paddingTopPx: 56,
     viewState: HOME_VIEW_STATE,
     inbox: { total: 0, analyzing: 0, waiting: 0, done: 0 },
     inboxPreview: [],
     inboxAnalyzing: [],
+    discoveryFeedState: 'idle',
+    discoveryErrorMessage: '',
+    discoveryRefreshing: false,
     featuredIndex: 0,
     featuredTotal: 0,
     featuredCursor: 0,
@@ -133,14 +154,18 @@ Page({
     this.setData({
       paddingTopPx: getHomePaddingTopPx(),
       viewState: HOME_VIEW_STATE,
-      ...deckAt(0),
+      ...inboxSnapshot(),
     })
+    void this.loadDiscoveryFeed()
   },
 
   onShow() {
-    this.setData(deckAt(this.data.featuredCursor))
+    this.setData(inboxSnapshot())
     this.detectIncomingContent()
     this.startInboxTicker()
+    if (!discoveryLoaded || this.data.discoveryFeedState === 'error') {
+      void this.loadDiscoveryFeed()
+    }
   },
 
   onHide() {
@@ -149,6 +174,79 @@ Page({
 
   onUnload() {
     this.stopInboxTicker()
+  },
+
+  onPullDownRefresh() {
+    void this.loadDiscoveryFeed({ replace: true, fromRefresh: true })
+  },
+
+  onDiscoveryRefresh() {
+    this.setData({ discoveryRefreshing: true })
+    void this.loadDiscoveryFeed({ replace: true, fromRefresh: true })
+  },
+
+  stopRefreshers() {
+    this.setData({ discoveryRefreshing: false })
+    wx.stopPullDownRefresh()
+  },
+
+  async loadDiscoveryFeed(options?: { replace?: boolean; fromRefresh?: boolean }) {
+    if (feedLock) {
+      if (options && options.fromRefresh) {
+        this.stopRefreshers()
+      }
+      return
+    }
+    feedLock = true
+    const replace = !!(options && options.replace)
+    const showAreaLoading =
+      !discoveryLoaded || this.data.discoveryFeedState === 'error'
+    if (showAreaLoading) {
+      this.setData({
+        discoveryFeedState: 'loading',
+        discoveryErrorMessage: '',
+        current: null,
+        next: null,
+        featuredIndex: 0,
+        featuredTotal: 0,
+      })
+    }
+    try {
+      const response = await listDiscoveries()
+      const deck = mapDiscoveryListToCardViewModels(response.items)
+      discoveryDeck = deck
+      discoveryLoaded = true
+      this.setData({
+        discoveryFeedState: deck.length ? 'ready' : 'empty',
+        discoveryErrorMessage: '',
+        ...deckSnapshot(deck, 0),
+        ...inboxSnapshot(),
+      })
+    } catch (error) {
+      const apiError = toApiError(error)
+      console.warn(`[home] discoveries ${apiError.code}`)
+      if (!discoveryLoaded || this.data.discoveryFeedState === 'error' || !discoveryDeck.length) {
+        this.setData({
+          discoveryFeedState: 'error',
+          discoveryErrorMessage: getDiscoveryFeedErrorMessage(apiError),
+          current: null,
+          next: null,
+          featuredIndex: 0,
+          featuredTotal: 0,
+        })
+      } else {
+        wx.showToast({ title: '暂时无法刷新发现', icon: 'none' })
+      }
+    } finally {
+      feedLock = false
+      if (replace || (options && options.fromRefresh)) {
+        this.stopRefreshers()
+      }
+    }
+  },
+
+  onRetryDiscovery() {
+    void this.loadDiscoveryFeed({ replace: true })
   },
 
   onShareAppMessage() {
@@ -226,7 +324,7 @@ Page({
       modalVisible: false,
       modalRaw: '',
       modalPreview: '',
-      ...deckAt(this.data.featuredCursor),
+      ...inboxSnapshot(),
     })
     wx.showToast({ title: '已加入待处理', icon: 'none' })
   },
@@ -239,15 +337,6 @@ Page({
       modalPreview: '',
     })
     startCheckFlow(raw)
-  },
-
-  refreshDeck() {
-    const featured = getFeaturedDiscoveries()
-    let cursor = this.data.featuredCursor
-    if (featured.length && cursor >= featured.length) {
-      cursor = 0
-    }
-    this.setData(deckAt(cursor))
   },
 
   clearGestureTimer() {
@@ -302,15 +391,24 @@ Page({
     }, 320)
   },
 
-  applyDeckDecision() {
-    const featured = getFeaturedDiscoveries()
-    let cursor = this.data.featuredCursor
-    if (featured.length && cursor >= featured.length) {
-      cursor = 0
+  dismissCurrentCard() {
+    const cursor = this.data.featuredCursor
+    if (!discoveryDeck.length) {
+      return
     }
+    discoveryDeck.splice(cursor, 1)
+    const nextState: DiscoveryFeedState = discoveryDeck.length ? 'ready' : 'exhausted'
+    const nextCursor =
+      nextState === 'exhausted'
+        ? 0
+        : cursor >= discoveryDeck.length
+          ? discoveryDeck.length - 1
+          : cursor
     this.setData({
       deckEntering: false,
-      ...deckAt(cursor),
+      discoveryFeedState: nextState,
+      ...deckSnapshot(discoveryDeck, nextCursor),
+      ...inboxSnapshot(),
     })
     wx.nextTick(() => {
       this.setData({ deckEntering: true })
@@ -329,7 +427,7 @@ Page({
     this._inboxTimer = setInterval(() => {
       const changed = advanceAnalyzingItems()
       if (changed) {
-        this.setData(deckAt(this.data.featuredCursor))
+        this.setData(inboxSnapshot())
       }
       if (!getInboxAnalyzingItems().length) {
         this.stopInboxTicker()
@@ -355,13 +453,8 @@ Page({
     wx.navigateTo({ url: '/pages/inbox/index' })
   },
 
-  onOpenDiscovery(event: { detail: { opportunityId?: string } }) {
-    const opportunityId = event.detail.opportunityId
-    if (!opportunityId) {
-      wx.showToast({ title: '没有对应的机会', icon: 'none' })
-      return
-    }
-    openOpportunityDetail(opportunityId)
+  onOpenDiscovery() {
+    return
   },
 
   onAddContent() {
@@ -428,7 +521,7 @@ Page({
     this.setData({
       composeVisible: false,
       composeText: '',
-      ...deckAt(this.data.featuredCursor),
+      ...inboxSnapshot(),
     })
     wx.showToast({ title: '已加入待处理', icon: 'none' })
   },
@@ -444,30 +537,11 @@ Page({
     })
   },
 
-  onInbox(event: { detail: { id?: string; fromGesture?: boolean } }) {
-    const id = event.detail.id
-    if (!id) {
-      return
-    }
-    addToInboxFromDiscovery(id)
-    if (event.detail.fromGesture) {
-      this.applyDeckDecision()
-      return
-    }
-    this.refreshDeck()
-    wx.showToast({ title: '已加入待处理', icon: 'none' })
+  onInbox() {
+    this.dismissCurrentCard()
   },
 
-  onDeprioritize(event: { detail: { id?: string; fromGesture?: boolean } }) {
-    const id = event.detail.id
-    if (!id) {
-      return
-    }
-    deprioritizeDiscovery(id)
-    if (event.detail.fromGesture) {
-      this.applyDeckDecision()
-      return
-    }
-    this.refreshDeck()
+  onDeprioritize() {
+    this.dismissCurrentCard()
   },
 })

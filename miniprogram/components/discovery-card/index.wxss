@@ -189,6 +189,25 @@
   line-height: 1.6;
 }
 
+.back-fact {
+  display: flex;
+  align-items: baseline;
+  margin-top: 16rpx;
+}
+
+.fact-label {
+  flex-shrink: 0;
+  margin-right: 16rpx;
+  font-size: var(--font-sm);
+  color: var(--text-tertiary);
+}
+
+.fact-value {
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
 .back-actions {
   display: flex;
   align-items: center;

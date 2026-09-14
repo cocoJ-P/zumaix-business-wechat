@@ -1,5 +1,6 @@
 import type { DiscoveryItem, InboxItem } from '../types/index'
 
+/** 仅供 workbench fixture / 演示页。首页「为你发现」Runtime 不得使用。 */
 export const mockFeaturedDiscoveries: DiscoveryItem[] = [
   {
     id: 'disc-01',

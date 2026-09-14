@@ -59,15 +59,28 @@ export interface CheckInput {
 
 export type HomeViewState = 'loading' | 'success' | 'empty' | 'error'
 
-export type DiscoveryKind = OpportunityType | '场景'
+export type DiscoveryKind =
+  | OpportunityType
+  | '场景'
+  | '场景机会'
+  | '股权融资'
+  | '其他'
+  | '内容'
+  | '推荐'
 
 export interface DiscoveryItem {
   id: string
-  kind: DiscoveryKind
+  kind: DiscoveryKind | ''
   eventStatus: string
   title: string
   reason: string
   opportunityId?: string
+  summary?: string
+  issuerLabel?: string
+  issuer?: string
+  region?: string
+  deadlineText?: string
+  hasReferenceSource?: boolean
 }
 
 export type InboxStatus = 'analyzing' | 'waiting' | 'done'

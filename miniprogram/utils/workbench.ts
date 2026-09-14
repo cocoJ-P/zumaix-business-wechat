@@ -100,6 +100,7 @@ function sortInboxForList(items: InboxItem[]): InboxItem[] {
   return items.slice().sort((a, b) => rank[a.status] - rank[b.status])
 }
 
+/** Fixture / 其他演示页使用。首页「为你发现」Runtime 不再走这里。 */
 export function getFeaturedDiscoveries(): DiscoveryItem[] {
   return cloneFeatured()
 }

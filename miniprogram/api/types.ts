@@ -184,3 +184,48 @@ export type UserSubmissionDetail = {
   content: SubmissionContentSummary | null
   intelligence: SubmissionIntelligenceSummary | null
 }
+
+export type DiscoveryStatus = 'active' | 'withdrawn'
+
+export type DiscoveryPriority = 'high' | 'normal' | 'low'
+
+export type DiscoveryReferenceType = 'opportunity' | 'source' | 'manual'
+
+export type DiscoveryOpportunityType =
+  | 'policy'
+  | 'competition'
+  | 'financial_service'
+  | 'equity_funding'
+  | 'park_service'
+  | 'scenario'
+  | 'other'
+
+export type DiscoveryActor = {
+  id: string
+  display_name: string
+}
+
+export type DiscoveryItemSummary = {
+  id: string
+  status: DiscoveryStatus
+  priority: DiscoveryPriority
+  reference_type: DiscoveryReferenceType
+  opportunity_id: string | null
+  source_id: string | null
+  title: string
+  summary: string | null
+  reason: string | null
+  opportunity_type: DiscoveryOpportunityType | null
+  issuer: string | null
+  region: string | null
+  deadline: string | null
+  reference_url: string | null
+  created_by: DiscoveryActor | null
+  created_at: string
+}
+
+export type DiscoveryItemListResponse = {
+  items: DiscoveryItemSummary[]
+  limit: number
+  offset: number
+}

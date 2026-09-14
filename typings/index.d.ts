@@ -34,6 +34,8 @@ declare namespace WechatMiniprogram {
     reLaunch(opt: { url: string }): void
     switchTab(opt: { url: string; fail?: () => void }): void
     navigateBack(opt?: { delta?: number; fail?: () => void }): void
+    stopPullDownRefresh(): void
+    nextTick(callback: () => void): void
     getStorageSync(key: string): unknown
     setStorageSync(key: string, data: unknown): void
     request(opt: {
@@ -71,6 +73,7 @@ declare namespace WechatMiniprogram {
     onReady?: () => void
     onHide?: () => void
     onUnload?: () => void
+    onPullDownRefresh?: () => void
     onShareAppMessage?: () => { title: string; path?: string }
   } & M
 

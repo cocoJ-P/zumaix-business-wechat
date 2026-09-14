@@ -1,6 +1,16 @@
 <page-meta page-style="overflow: hidden;" />
 
-<scroll-view class="page-scroll" scroll-y scroll-x="{{false}}" show-scrollbar="{{false}}" enhanced bounces="{{true}}">
+<scroll-view
+  class="page-scroll"
+  scroll-y
+  scroll-x="{{false}}"
+  show-scrollbar="{{false}}"
+  enhanced
+  bounces="{{true}}"
+  refresher-enabled="{{true}}"
+  refresher-triggered="{{discoveryRefreshing}}"
+  bindrefresherrefresh="onDiscoveryRefresh"
+>
 <view class="page" style="padding-top: {{paddingTopPx}}px;">
   <view class="brand">
     <view class="brand-main">
@@ -36,7 +46,23 @@
     <text wx:if="{{featuredTotal}}" class="discover-index">{{featuredIndex}} / {{featuredTotal}}</text>
   </view>
 
-  <block wx:if="{{current}}">
+  <block wx:if="{{discoveryFeedState === 'loading'}}">
+    <view class="discover-placeholder">
+      <text class="discover-loading">正在发现适合你的机会…</text>
+    </view>
+  </block>
+  <block wx:elif="{{discoveryFeedState === 'error'}}">
+    <empty-state title="暂时无法加载「为你发现」" description="{{discoveryErrorMessage}}" />
+    <view class="discover-retry" bindtap="onRetryDiscovery">重新加载</view>
+  </block>
+  <block wx:elif="{{discoveryFeedState === 'empty'}}">
+    <empty-state title="暂时没有新的发现" description="有新的机会或服务内容时，会出现在这里。" />
+  </block>
+  <block wx:elif="{{discoveryFeedState === 'exhausted'}}">
+    <empty-state title="暂时没有更多发现" description="下拉刷新可以重新查看。" />
+    <view class="discover-retry" bindtap="onRetryDiscovery">重新加载</view>
+  </block>
+  <block wx:elif="{{current}}">
     <view class="deck">
       <view class="current-slot {{deckEntering ? 'is-entering' : ''}}">
         <discovery-card
@@ -54,23 +80,6 @@
       </view>
     </view>
   </block>
-  <empty-state wx:else title="暂时没有新的发现" description="有值得处理的事情时会放在这里" />
-
-  <view wx:if="{{low.length}}" class="low">
-    <view class="low-head">
-      <text class="low-title">暂时没那么重要</text>
-      <text class="low-count">{{low.length}}</text>
-    </view>
-    <view class="low-item" wx:for="{{low}}" wx:key="id">
-      <discovery-card
-        item="{{item}}"
-        size="compact"
-        bind:inbox="onInbox"
-        bind:deprioritize="onDeprioritize"
-        bind:open="onOpenDiscovery"
-      />
-    </view>
-  </view>
 </view>
 </scroll-view>
 

@@ -5,10 +5,10 @@
 当前阶段：
 
 ```text
-D2.2 Mini Program Submission Write-through
+D4.2 Mini Program Discovery Feed Integration
 ```
 
-「查一个机会」通过 UserSubmission 写入筑脉企服 Backend。首页「为你发现」、机会 Tab 仍基于 Mock Data。
+「查一个机会」通过 UserSubmission 写入筑脉企服 Backend。首页「为你发现」读取 Backend active DiscoveryItem。机会 Tab 仍基于 Mock Data。
 
 用微信开发者工具打开本目录即可编译预览。AppID 已保留在 `project.config.json`。
 
@@ -164,13 +164,45 @@ Process timeout / 网络不确定 → 先 GET /api/user-submissions/{id}
 仍在 ingesting / analyzing → 只检查结果，不再次 process
 ```
 
+## Discovery Feed
+
+```text
+筑脉企服 Frontend
+↓
+POST /api/discoveries
+↓
+DiscoveryItem
+↓
+筑脉企服 Backend
+↓
+筑脉查查
+↓
+GET /api/discoveries
+↓
+首页「为你发现」
+```
+
+当前 Discovery Feed = Backend `status=active` 的 DiscoveryItem。首页 Runtime 不再使用 Mock Featured。
+
+加载方式：
+
+```text
+首次进入首页
++
+下拉刷新
+```
+
+没有 Polling、WebSocket、Notification。
+
+翻面 / 左右滑只改变当前页面 Session Deck，不写 Backend，也不写入待处理或本地 Storage。下拉刷新会按 Backend 重新建 Deck，因此滑走的 active 卡可以再次出现。这是 D4.2 的正确行为；D5 才会持久化 seen / saved / dismissed / deprioritized。
+
 尚未实现：
 
 ```text
+D5 User Feedback
 Submission History
-Discovery
-Push
-User Feedback Persistence
+首页待处理真实化
+Push / Notification
 Matching
 Lead
 Verification
@@ -178,10 +210,10 @@ Opportunity Resolution
 正式 Auth / OnePass
 ```
 
-首页「为你发现」、机会 Tab、「我的」线索仍是 Mock。
+机会 Tab、「我的」线索仍是 Mock。首页待处理仍保持当前实现。
 
 下一阶段：
 
 ```text
-D2.3 Service Frontend Submission Workspace
+D4.3 E2E Service Push Acceptance
 ```

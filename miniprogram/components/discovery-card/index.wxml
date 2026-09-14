@@ -14,10 +14,10 @@
           bindtap="onTap"
         >
           <block wx:if="{{size === 'large'}}">
-            <view class="event">
-              <text class="kind">{{item.kind}}</text>
-              <text class="sep">·</text>
-              <text class="status">{{item.eventStatus}}</text>
+            <view wx:if="{{item.kind || item.eventStatus}}" class="event">
+              <text wx:if="{{item.kind}}" class="kind">{{item.kind}}</text>
+              <text wx:if="{{item.kind && item.eventStatus}}" class="sep">·</text>
+              <text wx:if="{{item.eventStatus}}" class="status">{{item.eventStatus}}</text>
             </view>
             <text class="title">{{item.title}}</text>
             <text wx:if="{{item.reason}}" class="reason">{{item.reason}}</text>
@@ -40,17 +40,28 @@
           class="face face-back card card-large tint-{{tint}}"
           bindtap="onFlipBack"
         >
-          <view class="event">
-            <text class="kind">{{item.kind}}</text>
-            <text class="sep">·</text>
-            <text class="status">{{item.eventStatus}}</text>
+          <view wx:if="{{item.kind || item.eventStatus}}" class="event">
+            <text wx:if="{{item.kind}}" class="kind">{{item.kind}}</text>
+            <text wx:if="{{item.kind && item.eventStatus}}" class="sep">·</text>
+            <text wx:if="{{item.eventStatus}}" class="status">{{item.eventStatus}}</text>
           </view>
           <text class="title">{{item.title}}</text>
-          <text wx:if="{{item.reason}}" class="reason">{{item.reason}}</text>
-          <text class="note">脱水后的来源验证与企业匹配，可进入完整机会查看。</text>
+          <text wx:if="{{item.summary}}" class="reason">{{item.summary}}</text>
+          <view wx:if="{{item.issuer}}" class="back-fact">
+            <text class="fact-label">{{item.issuerLabel}}</text>
+            <text class="fact-value">{{item.issuer}}</text>
+          </view>
+          <view wx:if="{{item.region}}" class="back-fact">
+            <text class="fact-label">地区</text>
+            <text class="fact-value">{{item.region}}</text>
+          </view>
+          <view wx:if="{{item.deadlineText}}" class="back-fact">
+            <text class="fact-label">截止时间</text>
+            <text class="fact-value">{{item.deadlineText}}</text>
+          </view>
+          <text wx:if="{{item.hasReferenceSource}}" class="note">有参考来源</text>
           <view class="back-actions">
             <text class="back-link" catchtap="onFlipBack">返回正面</text>
-            <text class="action" catchtap="onOpenDetail">查看机会 →</text>
           </view>
         </view>
       </view>

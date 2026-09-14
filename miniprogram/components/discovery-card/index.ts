@@ -3,10 +3,15 @@ import type { DiscoveryItem } from '../../types/index'
 const TINT_MAP: Record<string, string> = {
   政策: 'policy',
   场景: 'scene',
+  场景机会: 'scene',
   创赛: 'contest',
   金融服务: 'finance',
   融资: 'funding',
+  股权融资: 'funding',
   园区服务: 'park',
+  内容: 'policy',
+  推荐: 'policy',
+  其他: 'policy',
 }
 
 const AXIS_LOCK = 9

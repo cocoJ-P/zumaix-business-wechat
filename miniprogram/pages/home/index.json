@@ -1,6 +1,7 @@
 {
   "navigationStyle": "custom",
   "disableSwipeBack": true,
+  "enablePullDownRefresh": true,
   "backgroundColor": "#F4F1EB",
   "backgroundTextStyle": "dark",
   "usingComponents": {
