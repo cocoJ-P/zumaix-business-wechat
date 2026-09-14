@@ -8,7 +8,10 @@ import type {
   CreateUserSubmissionRequest,
   CreateUserSubmissionResponse,
   UserSubmissionDetail,
+  UserSubmissionListResponse,
 } from './types'
+
+const MY_SUBMISSIONS_LIMIT = 20
 
 export function createUserSubmission(
   input: CreateUserSubmissionRequest
@@ -18,6 +21,14 @@ export function createUserSubmission(
     method: 'POST',
     data: input,
     timeout: CREATE_SUBMISSION_TIMEOUT_MS,
+  })
+}
+
+export function listMyUserSubmissions(): Promise<UserSubmissionListResponse> {
+  return request<UserSubmissionListResponse>({
+    path: `/api/user-submissions/mine?limit=${MY_SUBMISSIONS_LIMIT}&offset=0`,
+    method: 'GET',
+    timeout: REQUEST_TIMEOUT_MS,
   })
 }
 

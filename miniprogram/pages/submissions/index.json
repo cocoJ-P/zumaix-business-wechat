@@ -1,0 +1,12 @@
+{
+  "navigationBarTitleText": "全部内容",
+  "navigationBarBackgroundColor": "#F4F1EB",
+  "navigationBarTextStyle": "black",
+  "backgroundColor": "#F4F1EB",
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "dark",
+  "usingComponents": {
+    "recommended-list": "/components/recommended-list/index",
+    "empty-state": "/components/empty-state/index"
+  }
+}

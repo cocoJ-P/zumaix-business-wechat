@@ -1,0 +1,11 @@
+<view class="reco-card reco-card-{{layout}} {{compact ? 'reco-card-compact' : ''}}">
+  <view wx:if="{{!compact}}" class="reco-meta">
+    <text class="reco-status reco-status-{{item.status}}">{{item.statusText}}</text>
+    <text wx:if="{{item.originText}}" class="reco-sep">·</text>
+    <text wx:if="{{item.originText}}" class="reco-origin">{{item.originText}}</text>
+    <text wx:if="{{item.timeText}}" class="reco-sep">·</text>
+    <text wx:if="{{item.timeText}}" class="reco-time">{{item.timeText}}</text>
+  </view>
+  <text class="reco-title">{{item.title}}</text>
+  <text wx:if="{{!compact && item.preview}}" class="reco-preview">{{item.preview}}</text>
+</view>

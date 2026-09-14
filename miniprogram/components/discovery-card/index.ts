@@ -1,19 +1,5 @@
 import type { DiscoveryItem } from '../../types/index'
 
-const TINT_MAP: Record<string, string> = {
-  政策: 'policy',
-  场景: 'scene',
-  场景机会: 'scene',
-  创赛: 'contest',
-  金融服务: 'finance',
-  融资: 'funding',
-  股权融资: 'funding',
-  园区服务: 'park',
-  内容: 'policy',
-  推荐: 'policy',
-  其他: 'policy',
-}
-
 const AXIS_LOCK = 9
 const COMMIT_THRESHOLD = 200
 const MAX_VISUAL_X = 20
@@ -33,9 +19,12 @@ Component({
       type: String,
       value: 'large',
     },
+    locked: {
+      type: Boolean,
+      value: false,
+    },
   },
   data: {
-    tint: 'policy',
     tx: 0,
     visualDx: 0,
     visualY: 0,
@@ -75,9 +64,7 @@ Component({
   methods: {
     syncTint(value: unknown) {
       const item = value as DiscoveryItem
-      const kind = item && item.kind ? item.kind : '政策'
       this.setData({
-        tint: TINT_MAP[kind] || 'policy',
         displayTitle: (item && item.title ? item.title : '').replace(/\n/g, ''),
       })
     },
@@ -136,7 +123,7 @@ Component({
       })
     },
     onStart(event: { touches: Array<{ clientX: number; clientY: number }> }) {
-      if (this.data.flipping || this._committing) {
+      if (this.data.flipping || this._committing || this.properties.locked) {
         return
       }
       const touch = event.touches[0]
@@ -148,7 +135,7 @@ Component({
       this._didHaptic = false
     },
     onMove(event: { touches: Array<{ clientX: number; clientY: number }> }) {
-      if (this.data.flipping || this._committing) {
+      if (this.data.flipping || this._committing || this.properties.locked) {
         return
       }
       const touch = event.touches[0]
@@ -191,7 +178,7 @@ Component({
       this.emitGesture(dx, armed)
     },
     onEnd() {
-      if (this._committing || this.data.flipping) {
+      if (this._committing || this.data.flipping || this.properties.locked) {
         return
       }
       if (this._axis !== 'x') {
@@ -200,7 +187,7 @@ Component({
       const rawDx = this._rawDx || 0
       if (this.isLarge()) {
         if (rawDx >= COMMIT_THRESHOLD) {
-          this.commit('inbox')
+          this.commit('save')
           return
         }
         if (rawDx <= -COMMIT_THRESHOLD) {
@@ -212,7 +199,7 @@ Component({
       }
       const tx = this.data.tx as number
       if (tx >= COMPACT_THRESHOLD) {
-        this.commitCompact('inbox')
+        this.commitCompact('save')
         return
       }
       if (tx <= -COMPACT_THRESHOLD) {
@@ -241,7 +228,7 @@ Component({
         this.setData({ settling: false })
       }, SETTLE_MS)
     },
-    commit(action: 'inbox' | 'deprioritize') {
+    commit(action: 'save' | 'deprioritize') {
       this._committing = true
       this.clearMotionTimer()
       const visualDx = this.data.visualDx as number
@@ -257,7 +244,7 @@ Component({
       this.triggerEvent('decision', { action })
       this.triggerEvent('gesturechange', {
         active: true,
-        direction: action === 'inbox' ? 'right' : 'left',
+        direction: action === 'save' ? 'right' : 'left',
         rawDx: this._rawDx || 0,
         progress: 1,
         armed: true,
@@ -269,9 +256,9 @@ Component({
         this.triggerEvent(action, { id, fromGesture: true })
       }, COMMIT_MS)
     },
-    commitCompact(action: 'inbox' | 'deprioritize') {
+    commitCompact(action: 'save' | 'deprioritize') {
       const item = this.properties.item as DiscoveryItem
-      const tx = action === 'inbox' ? COMPACT_MAX : -COMPACT_MAX
+      const tx = action === 'save' ? COMPACT_MAX : -COMPACT_MAX
       this.setData({
         tx,
         moverStyle: this.motionStyle(tx, 0, 1, 1),
@@ -296,7 +283,7 @@ Component({
       }, 450)
     },
     onTap() {
-      if (this._swiped || this.data.flipping || this._committing) {
+      if (this._swiped || this.data.flipping || this._committing || this.properties.locked) {
         return
       }
       if (!this.isLarge()) {
@@ -306,17 +293,17 @@ Component({
       this.flipTo(true)
     },
     onFlipBack() {
-      if (this._swiped || this.data.flipping || this._committing) {
+      if (this._swiped || this.data.flipping || this._committing || this.properties.locked) {
         return
       }
       this.flipTo(false)
     },
     onAddFromBack() {
-      if (this._swiped || this._committing) {
+      if (this._swiped || this._committing || this.properties.locked) {
         return
       }
       const item = this.properties.item as DiscoveryItem
-      this.triggerEvent('inbox', { id: item.id })
+      this.triggerEvent('save', { id: item.id })
     },
     onOpenDetail() {
       if (this._swiped || this._committing) {

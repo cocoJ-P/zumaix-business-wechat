@@ -5,10 +5,10 @@
 当前阶段：
 
 ```text
-D4.2 Mini Program Discovery Feed Integration
+D5.2.3.2 Mini Program Home Workflow Correction
 ```
 
-「查一个机会」通过 UserSubmission 写入筑脉企服 Backend。首页「为你发现」读取 Backend active DiscoveryItem。机会 Tab 仍基于 Mock Data。
+首页输入入口提交 URL / 正文；「为您推荐」是当前用户的 UserSubmission 工作列表；「为你发现」右滑会 accept 进同一解析工作流。机会 Tab 仍基于 Mock Data。
 
 用微信开发者工具打开本目录即可编译预览。AppID 已保留在 `project.config.json`。
 
@@ -164,6 +164,68 @@ Process timeout / 网络不确定 → 先 GET /api/user-submissions/{id}
 仍在 ingesting / analyzing → 只检查结果，不再次 process
 ```
 
+## 首页信息架构
+
+首页从上到下：
+
+```text
+输入入口
+=
+粘贴链接或内容 / 开始查查
+=
+用户主动提交 URL / 正文
+=
+复用 pages/check Create → Process
+
+为您推荐
+=
+GET /api/user-submissions/mine
+=
+当前用户已经进入解析工作流的内容
+
+首页列表只展示：
+status = succeeded（已解析）
+
+右侧「显示全部」进入完整工作列表：
+待处理 / 读取中 / 分析中 / 已解析 / 解析失败
+
+来源：
+- 用户主动输入（origin_type=user_input）
+- 「为你发现」右滑接受（origin_type=discovery）
+
+为你发现
+=
+GET /api/discoveries/feed
+=
+尚未判断（fresh）+ 暂时没那么重要（deprioritized）
+```
+
+输入区域是 Action / Entry，不是第三块首页业务模块。真正两个核心内容组件仍是「为您推荐」和「为你发现」。Bottom Tabs 保持。
+
+待处理不再单独占一块首页 Section。首页「为您推荐」是纵向 List，只展示解析完成的条目；右侧「显示全部」查看全部状态。
+
+视觉语义：
+
+```text
+为你发现 fresh
+=
+disposition null
+=
+Aurora / 柔和极光卡
+
+为你发现 plain
+=
+disposition = deprioritized
+=
+朴素色卡
+
+为您推荐
+=
+UserSubmission 工作列表
+=
+首页纵向 List 只展示已解析；「显示全部」查看全部状态
+```
+
 ## Discovery Feed
 
 ```text
@@ -177,31 +239,77 @@ DiscoveryItem
 ↓
 筑脉查查
 ↓
-GET /api/discoveries
+GET /api/discoveries/feed
+GET /api/user-submissions/mine
 ↓
-首页「为你发现」
+首页「为你发现」 / 「为您推荐」
 ```
 
-当前 Discovery Feed = Backend `status=active` 的 DiscoveryItem。首页 Runtime 不再使用 Mock Featured。
+首页不再读取 `GET /api/discoveries/saved`。`saved` 仍是 Backend UserState 事实，但不是首页「为您推荐」的数据源。
 
 加载方式：
 
 ```text
-首次进入首页
-+
-下拉刷新
+首次进入首页：并行 GET /mine + GET /feed
+从 Check 返回：只刷新 GET /mine，不重建 Discovery Deck
+下拉刷新：并行重新 GET /mine + GET /feed
 ```
 
-没有 Polling、WebSocket、Notification。
+两个区域 Loading / Error 独立。没有 Polling、WebSocket、Notification。
 
-翻面 / 左右滑只改变当前页面 Session Deck，不写 Backend，也不写入待处理或本地 Storage。下拉刷新会按 Backend 重新建 Deck，因此滑走的 active 卡可以再次出现。这是 D4.2 的正确行为；D5 才会持久化 seen / saved / dismissed / deprioritized。
+## Discovery Feedback
+
+```text
+Current Card → POST /seen（仅当前卡；预览、Flip、推荐区不重复 seen）
+
+右滑
+=
+POST /api/discoveries/{id}/accept
+=
+saved UserState
++
+linked UserSubmission
+→ 进入「为您推荐」
+→ 若 submission 仍是 pending，再 POST /process
+
+左滑
+=
+PATCH deprioritized
+→ 移到「为你发现」队列末尾
+→ 不创建 UserSubmission
+
+已 deprioritized 再左滑
+→ 只循环到末尾，不重复 PATCH
+
+已 deprioritized 再右滑
+→ POST /accept
+→ deprioritized 变为 saved，并进入解析工作流
+```
+
+右滑不再只是收藏。`saved` 是 Backend 状态事实，UserSubmission 是工作流事实。
+
+Accept 成功后即使 Process 失败，也不把 Discovery rollback 回「为你发现」。卡片留在「为您推荐」，状态为解析失败，可对同一 submission_id 重试 process。
+
+不再存在 dismissed。没有红色 ×、不感兴趣、删除 / 隐藏 / 跳过。
+
+D4.2 的 swipe 只改 Session；D5.2 起左滑会 PATCH `/user-state`。D5.2.2 起左滑循环 Queue。D5.2.3.2 起右滑改为 accept → UserSubmission。
+
+边界：
+
+```text
+saved ≠ 首页「为您推荐」
+UserSubmission = 首页「为您推荐」
+deprioritized ≠ 从 Feed 删除
+看过（seen）≠ 已经判断
+succeeded submission = 未来 Feishu workflow input（本阶段不实现飞书）
+```
 
 尚未实现：
 
 ```text
-D5 User Feedback
-Submission History
-首页待处理真实化
+D5.3 Service Frontend Feedback Workspace
+飞书
+Saved Detail / 取消保存 / Undo
 Push / Notification
 Matching
 Lead
@@ -210,10 +318,10 @@ Opportunity Resolution
 正式 Auth / OnePass
 ```
 
-机会 Tab、「我的」线索仍是 Mock。首页待处理仍保持当前实现。
+机会 Tab、「我的」线索仍是 Mock。inbox 页面仍保持当前实现，只是不再作为首页独立模块。
 
 下一阶段：
 
 ```text
-D4.3 E2E Service Push Acceptance
+D5.3 Service Frontend Feedback Workspace
 ```

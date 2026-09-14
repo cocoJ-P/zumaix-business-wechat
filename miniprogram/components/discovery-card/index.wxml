@@ -10,58 +10,75 @@
     <view class="stage">
       <view class="flip {{flipped ? 'is-flipped' : ''}}">
         <view
-          class="face face-front card card-{{size}} tint-{{tint}}"
+          class="face face-front card card-{{size}} visual-{{item.visualState === 'deprioritized' ? 'plain' : 'fresh'}}"
           bindtap="onTap"
         >
-          <block wx:if="{{size === 'large'}}">
-            <view wx:if="{{item.kind || item.eventStatus}}" class="event">
-              <text wx:if="{{item.kind}}" class="kind">{{item.kind}}</text>
-              <text wx:if="{{item.kind && item.eventStatus}}" class="sep">·</text>
-              <text wx:if="{{item.eventStatus}}" class="status">{{item.eventStatus}}</text>
-            </view>
-            <text class="title">{{item.title}}</text>
-            <text wx:if="{{item.reason}}" class="reason">{{item.reason}}</text>
-            <text class="action">查看判断 →</text>
+          <block wx:if="{{item.visualState !== 'deprioritized'}}">
+            <view class="aurora aurora-a"></view>
+            <view class="aurora aurora-b"></view>
+            <view class="aurora aurora-c"></view>
+            <view class="aurora-veil"></view>
           </block>
-          <block wx:else>
-            <view class="compact-top">
-              <text class="kind">{{item.kind}}</text>
-              <text class="status">{{item.eventStatus}}</text>
-            </view>
-            <view class="compact-bottom">
-              <text class="compact-title">{{displayTitle}}</text>
-              <text class="chevron">›</text>
-            </view>
-          </block>
+          <view class="face-content">
+            <block wx:if="{{size === 'large'}}">
+              <view wx:if="{{item.kind || item.eventStatus}}" class="event">
+                <text wx:if="{{item.kind}}" class="kind">{{item.kind}}</text>
+                <text wx:if="{{item.kind && item.eventStatus}}" class="sep">·</text>
+                <text wx:if="{{item.eventStatus}}" class="status">{{item.eventStatus}}</text>
+              </view>
+              <text class="title">{{item.title}}</text>
+              <text wx:if="{{item.reason}}" class="reason">{{item.reason}}</text>
+              <text class="action">查看判断 →</text>
+            </block>
+            <block wx:else>
+              <view class="compact-top">
+                <text class="kind">{{item.kind}}</text>
+                <text class="status">{{item.eventStatus}}</text>
+              </view>
+              <view class="compact-bottom">
+                <text class="compact-title">{{displayTitle}}</text>
+                <text class="chevron">›</text>
+              </view>
+            </block>
+          </view>
         </view>
 
-        <view
-          wx:if="{{size === 'large'}}"
-          class="face face-back card card-large tint-{{tint}}"
-          bindtap="onFlipBack"
-        >
-          <view wx:if="{{item.kind || item.eventStatus}}" class="event">
-            <text wx:if="{{item.kind}}" class="kind">{{item.kind}}</text>
-            <text wx:if="{{item.kind && item.eventStatus}}" class="sep">·</text>
-            <text wx:if="{{item.eventStatus}}" class="status">{{item.eventStatus}}</text>
-          </view>
-          <text class="title">{{item.title}}</text>
-          <text wx:if="{{item.summary}}" class="reason">{{item.summary}}</text>
-          <view wx:if="{{item.issuer}}" class="back-fact">
-            <text class="fact-label">{{item.issuerLabel}}</text>
-            <text class="fact-value">{{item.issuer}}</text>
-          </view>
-          <view wx:if="{{item.region}}" class="back-fact">
-            <text class="fact-label">地区</text>
-            <text class="fact-value">{{item.region}}</text>
-          </view>
-          <view wx:if="{{item.deadlineText}}" class="back-fact">
-            <text class="fact-label">截止时间</text>
-            <text class="fact-value">{{item.deadlineText}}</text>
-          </view>
-          <text wx:if="{{item.hasReferenceSource}}" class="note">有参考来源</text>
-          <view class="back-actions">
-            <text class="back-link" catchtap="onFlipBack">返回正面</text>
+        <view wx:if="{{size === 'large' && (flipped || flipping)}}" class="face-back-layer">
+          <view
+            class="face face-back card card-large visual-{{item.visualState === 'deprioritized' ? 'plain' : 'fresh'}}"
+            bindtap="onFlipBack"
+          >
+            <block wx:if="{{item.visualState !== 'deprioritized'}}">
+              <view class="aurora aurora-a"></view>
+              <view class="aurora aurora-b"></view>
+              <view class="aurora aurora-c"></view>
+              <view class="aurora-veil"></view>
+            </block>
+            <view class="face-content">
+              <view wx:if="{{item.kind || item.eventStatus}}" class="event">
+                <text wx:if="{{item.kind}}" class="kind">{{item.kind}}</text>
+                <text wx:if="{{item.kind && item.eventStatus}}" class="sep">·</text>
+                <text wx:if="{{item.eventStatus}}" class="status">{{item.eventStatus}}</text>
+              </view>
+              <text class="title">{{item.title}}</text>
+              <text wx:if="{{item.summary}}" class="reason">{{item.summary}}</text>
+              <view wx:if="{{item.issuer}}" class="back-fact">
+                <text class="fact-label">{{item.issuerLabel}}</text>
+                <text class="fact-value">{{item.issuer}}</text>
+              </view>
+              <view wx:if="{{item.region}}" class="back-fact">
+                <text class="fact-label">地区</text>
+                <text class="fact-value">{{item.region}}</text>
+              </view>
+              <view wx:if="{{item.deadlineText}}" class="back-fact">
+                <text class="fact-label">截止时间</text>
+                <text class="fact-value">{{item.deadlineText}}</text>
+              </view>
+              <text wx:if="{{item.hasReferenceSource}}" class="note">有参考来源</text>
+              <view class="back-actions">
+                <text class="back-link" catchtap="onFlipBack">返回正面</text>
+              </view>
+            </view>
           </view>
         </view>
       </view>

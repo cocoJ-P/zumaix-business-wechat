@@ -4,6 +4,7 @@
     "pages/opportunity/index",
     "pages/user/index",
     "pages/check/index",
+    "pages/submissions/index",
     "pages/opportunity-detail/index",
     "pages/inbox/index",
     "pages/judgment/index"

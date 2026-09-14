@@ -81,6 +81,21 @@ export interface DiscoveryItem {
   region?: string
   deadlineText?: string
   hasReferenceSource?: boolean
+  seenAt?: string | null
+  visualState?: 'fresh' | 'deprioritized'
+}
+
+export type RecommendedItem = {
+  id: string
+  title: string
+  status: 'pending' | 'ingesting' | 'analyzing' | 'succeeded' | 'failed' | 'checking'
+  statusText: string
+  preview: string
+  originText: string
+  timeText: string
+  originType: 'user_input' | 'discovery'
+  originDiscoveryId?: string | null
+  tempDiscoveryId?: string
 }
 
 export type InboxStatus = 'analyzing' | 'waiting' | 'done'

@@ -142,14 +142,41 @@ export type SubmissionActor = {
   display_name: string
 }
 
+export type SubmissionOriginType = 'user_input' | 'discovery'
+
 export type CreateUserSubmissionResponse = {
   id: string
   status: SubmissionStatus
   input_type: ContentInputType
   input_preview: string
+  origin_type: SubmissionOriginType
+  origin_discovery_id: string | null
   created_at: string
   user: SubmissionActor
   enterprise: CurrentIdentityEnterprise
+}
+
+export type UserSubmissionSummary = {
+  id: string
+  status: SubmissionStatus
+  failure_stage: SubmissionFailureStage
+  input_type: ContentInputType
+  input_preview: string
+  display_title: string
+  submitted_by: SubmissionActor
+  origin_type: SubmissionOriginType
+  origin_discovery_id: string | null
+  source_id: string | null
+  ingestion_id: string | null
+  intelligence_run_id: string | null
+  created_at: string
+  completed_at: string | null
+}
+
+export type UserSubmissionListResponse = {
+  items: UserSubmissionSummary[]
+  limit: number
+  offset: number
 }
 
 export type UserSubmission = {
@@ -157,6 +184,11 @@ export type UserSubmission = {
   status: SubmissionStatus
   failure_stage: SubmissionFailureStage
   input_type: ContentInputType
+  input_preview?: string
+  origin_type?: SubmissionOriginType
+  origin_discovery_id?: string | null
+  created_at?: string
+  completed_at?: string | null
   error_code?: string | null
   error_message?: string | null
 }
@@ -228,4 +260,55 @@ export type DiscoveryItemListResponse = {
   items: DiscoveryItemSummary[]
   limit: number
   offset: number
+}
+
+export type DiscoveryDisposition = 'saved' | 'deprioritized'
+
+export type DiscoveryCurrentUserState = {
+  seen_at: string | null
+  disposition: DiscoveryDisposition | null
+  disposition_at?: string | null
+}
+
+export type DiscoveryFeedItem = {
+  id: string
+  status: DiscoveryStatus
+  priority: DiscoveryPriority
+  reference_type: DiscoveryReferenceType
+  title: string
+  summary: string | null
+  reason: string | null
+  opportunity_type: DiscoveryOpportunityType | null
+  issuer: string | null
+  region: string | null
+  deadline: string | null
+  reference_url: string | null
+  created_at: string
+  opportunity_id?: string | null
+  current_user_state: DiscoveryCurrentUserState | null
+}
+
+export type DiscoveryFeedResponse = {
+  items: DiscoveryFeedItem[]
+  limit: number
+  offset: number
+}
+
+export type DiscoveryUserStateResponse = {
+  discovery_id: string
+  user_id: string
+  seen_at: string | null
+  disposition: DiscoveryDisposition | null
+  disposition_at: string | null
+  updated_at?: string | null
+}
+
+export type UpdateDiscoveryDispositionRequest = {
+  disposition: DiscoveryDisposition
+}
+
+export type AcceptDiscoveryResponse = {
+  created: boolean
+  user_state: DiscoveryUserStateResponse
+  submission: CreateUserSubmissionResponse
 }

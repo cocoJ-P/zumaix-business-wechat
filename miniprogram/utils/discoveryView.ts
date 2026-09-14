@@ -1,8 +1,10 @@
 import type { ApiError } from '../api/errors'
 import type {
-  DiscoveryItemSummary,
+  DiscoveryCurrentUserState,
+  DiscoveryFeedItem,
   DiscoveryOpportunityType,
   DiscoveryReferenceType,
+  DiscoveryStatus,
 } from '../api/types'
 import type { DiscoveryItem } from '../types/index'
 
@@ -19,6 +21,22 @@ const OPPORTUNITY_TYPE_LABEL: Record<DiscoveryOpportunityType, DiscoveryItem['ki
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 const FRONT_REASON_MAX = 72
 const BACK_SUMMARY_MAX = 96
+
+type DiscoveryCardSource = {
+  id: string
+  status: DiscoveryStatus
+  reference_type: DiscoveryReferenceType
+  title: string
+  summary: string | null
+  reason: string | null
+  opportunity_type: DiscoveryOpportunityType | null
+  issuer: string | null
+  region: string | null
+  deadline: string | null
+  reference_url: string | null
+  opportunity_id?: string | null
+  current_user_state?: DiscoveryCurrentUserState | null
+}
 
 function textValue(value: string | null | undefined): string {
   return value && value.trim() ? value.trim() : ''
@@ -106,8 +124,22 @@ function issuerLabel(referenceType: DiscoveryReferenceType): string {
   return '发布方'
 }
 
+function shouldSkipFeedItem(item: DiscoveryFeedItem): boolean {
+  const disposition = item.current_user_state ? item.current_user_state.disposition : null
+  return disposition === 'saved'
+}
+
+function visualStateFromUserState(
+  state: DiscoveryCurrentUserState | null | undefined
+): 'fresh' | 'deprioritized' {
+  if (state && state.disposition === 'deprioritized') {
+    return 'deprioritized'
+  }
+  return 'fresh'
+}
+
 export function mapDiscoveryToCardViewModel(
-  item: DiscoveryItemSummary
+  item: DiscoveryCardSource
 ): DiscoveryItem | null {
   if (item.status !== 'active') {
     return null
@@ -115,6 +147,7 @@ export function mapDiscoveryToCardViewModel(
   const reason = textValue(item.reason)
   const summary = textValue(item.summary)
   const frontReason = reason || (summary ? truncateText(summary, FRONT_REASON_MAX) : '')
+  const state = item.current_user_state
   return {
     id: item.id,
     kind: mapKindLabel(item.opportunity_type, item.reference_type),
@@ -128,16 +161,18 @@ export function mapDiscoveryToCardViewModel(
     region: textValue(item.region),
     deadlineText: formatDiscoveryDeadline(item.deadline),
     hasReferenceSource: !!textValue(item.reference_url),
+    seenAt: state && state.seen_at ? state.seen_at : null,
+    visualState: visualStateFromUserState(state),
   }
 }
 
-export function mapDiscoveryListToCardViewModels(
-  items: DiscoveryItemSummary[]
+export function mapDiscoveryFeedToCardViewModels(
+  items: DiscoveryFeedItem[]
 ): DiscoveryItem[] {
   const seen = new Set<string>()
   const mapped: DiscoveryItem[] = []
   items.forEach((item) => {
-    if (seen.has(item.id)) {
+    if (seen.has(item.id) || shouldSkipFeedItem(item)) {
       return
     }
     seen.add(item.id)
@@ -165,7 +200,27 @@ export function getDiscoveryFeedErrorMessage(error: ApiError): string {
     return '当前企业上下文尚未确定。'
   }
   if (error.code === 'NETWORK_ERROR' || error.code === 'REQUEST_TIMEOUT') {
-    return '暂时无法加载「为你发现」'
+    return '暂时无法加载「为您推送」'
   }
-  return '暂时无法加载「为你发现」'
+  return '暂时无法加载「为您推送」'
+}
+
+export function getDiscoveryFeedbackErrorMessage(error: ApiError): string {
+  if (error.code === 'DISCOVERY_NOT_FOUND') {
+    return '这条发现已不可用'
+  }
+  if (
+    error.code === 'DEV_IDENTITY_REQUIRED' ||
+    error.code === 'AUTHENTICATION_REQUIRED' ||
+    error.code === 'ENTERPRISE_CONTEXT_REQUIRED' ||
+    error.code === 'ENTERPRISE_MEMBERSHIP_NOT_FOUND' ||
+    error.code === 'USER_NOT_FOUND' ||
+    error.code === 'USER_DISABLED'
+  ) {
+    return '当前身份不可用，操作未保存'
+  }
+  if (error.code === 'NETWORK_ERROR' || error.code === 'REQUEST_TIMEOUT') {
+    return '网络异常，操作没有保存'
+  }
+  return '操作没有保存，请重试'
 }

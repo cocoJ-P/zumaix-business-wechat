@@ -28,8 +28,8 @@ Component({
   data: {
     leftOn: false,
     rightOn: false,
-    leftText: '← 降低优先级',
-    rightText: '加入待处理 →',
+    leftText: '← 稍后',
+    rightText: '保存 →',
     leftStyle: '',
     rightStyle: '',
     leftArmed: false,
@@ -67,17 +67,17 @@ Component({
       const rightOn = show && direction === 'right'
       const leftArmed = leftOn && (armed || committed)
       const rightArmed = rightOn && (armed || committed)
-      let leftText = '← 降低优先级'
-      let rightText = '加入待处理 →'
+      let leftText = '← 稍后'
+      let rightText = '保存 →'
       if (committed && direction === 'left') {
-        leftText = '✓ 已降低优先级'
+        leftText = '✓ 稍后'
       } else if (leftArmed) {
-        leftText = '✓ 降低优先级'
+        leftText = '✓ 稍后'
       }
       if (committed && direction === 'right') {
-        rightText = '✓ 已加入待处理'
+        rightText = '✓ 保存'
       } else if (rightArmed) {
-        rightText = '✓ 加入待处理'
+        rightText = '✓ 保存'
       }
       this.setData({
         leftOn,

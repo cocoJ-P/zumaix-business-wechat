@@ -1,0 +1,15 @@
+<view class="page">
+  <block wx:if="{{loading}}">
+    <text class="status-copy">正在加载内容…</text>
+  </block>
+  <block wx:elif="{{error}}">
+    <empty-state title="暂时无法加载内容" description="{{errorMessage}}" />
+    <view class="retry" bindtap="onRetry">重新加载</view>
+  </block>
+  <block wx:elif="{{!items.length}}">
+    <empty-state title="还没有内容" description="粘贴链接、内容，或右滑你想继续了解的发现。" />
+  </block>
+  <block wx:else>
+    <recommended-list items="{{items}}" bind:itemtap="onOpenItem" />
+  </block>
+</view>

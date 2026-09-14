@@ -6,8 +6,8 @@
   "backgroundTextStyle": "dark",
   "usingComponents": {
     "discovery-card": "/components/discovery-card/index",
+    "recommended-list": "/components/recommended-list/index",
     "decision-overlay": "/components/decision-overlay/index",
-    "inbox-panel": "/components/inbox-panel/index",
     "empty-state": "/components/empty-state/index"
   }
 }

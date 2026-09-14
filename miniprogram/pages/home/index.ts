@@ -1,23 +1,20 @@
-import { listDiscoveries } from '../../api/discoveries'
+import { acceptDiscovery, listDiscoveryFeed, markDiscoverySeen, updateDiscoveryDisposition } from '../../api/discoveries'
 import { toApiError } from '../../api/errors'
-import type { DiscoveryItem, HomeViewState } from '../../types/index'
-import { HOME_VIEW_STATE } from '../../mock/homeState'
+import { getUserSubmission, listMyUserSubmissions, processUserSubmission } from '../../api/submissions'
+import type { DiscoveryItem, RecommendedItem } from '../../types/index'
+import { startCheckFlow, openSubmissionCheck } from '../../utils/checkSession'
+import { getDiscoveryFeedErrorMessage, mapDiscoveryFeedToCardViewModels } from '../../utils/discoveryView'
 import {
-  addInboxEntry,
-  advanceAnalyzingItems,
-  getInboxAnalyzingItems,
-  getInboxPreviewItems,
-  getInboxSummary,
-  takeIncomingShare,
-  getInboxItems,
-} from '../../utils/workbench'
-import type { InboxSummary, InboxViewItem } from '../../utils/workbench'
-import { ANALYZE_STEP_DELAY_MS } from '../../utils/analyzeSteps'
-import { startCheckFlow, openInboxEntry } from '../../utils/checkSession'
-import {
-  getDiscoveryFeedErrorMessage,
-  mapDiscoveryListToCardViewModels,
-} from '../../utils/discoveryView'
+  createTempRecommendedFromDiscovery,
+  filterSucceededRecommendedItems,
+  getRecommendedListErrorMessage,
+  mapAcceptedSubmissionToRecommended,
+  mapMySubmissionsToRecommendedViewModels,
+  mapSubmissionDetailToRecommended,
+  patchRecommendedItem,
+  prependRecommendedItem,
+  replaceRecommendedItem,
+} from '../../utils/submissionView'
 
 type GestureState = {
   active: boolean
@@ -37,32 +34,23 @@ const IDLE_GESTURE: GestureState = {
   committed: false,
 }
 
-type DiscoveryFeedState = 'idle' | 'loading' | 'ready' | 'empty' | 'error' | 'exhausted'
-
 type HomeData = {
   paddingTopPx: number
-  viewState: HomeViewState
-  inbox: InboxSummary
-  inboxPreview: InboxViewItem[]
-  inboxAnalyzing: InboxViewItem[]
-  discoveryFeedState: DiscoveryFeedState
+  recommendedItems: RecommendedItem[]
+  recommendedLoading: boolean
+  recommendedError: boolean
+  recommendedErrorMessage: string
+  discoveryLoading: boolean
+  discoveryError: boolean
   discoveryErrorMessage: string
-  discoveryRefreshing: boolean
-  featuredIndex: number
-  featuredTotal: number
-  featuredCursor: number
+  discoveryCount: number
   current: DiscoveryItem | null
   next: DiscoveryItem | null
-  low: DiscoveryItem[]
-  modalVisible: boolean
-  modalKicker: string
-  modalPreview: string
-  modalRaw: string
-  sheetVisible: boolean
-  composeVisible: boolean
-  composeText: string
+  homeRefreshing: boolean
   gesture: GestureState
   deckEntering: boolean
+  feedbackLocked: boolean
+  composeText: string
 }
 
 function getHomePaddingTopPx(): number {
@@ -73,180 +61,216 @@ function getHomePaddingTopPx(): number {
   return 56
 }
 
-function previewText(raw: string): string {
-  const compact = raw.replace(/\s+/g, ' ').trim()
-  if (compact.length <= 48) {
-    return compact
-  }
-  return `${compact.slice(0, 48)}……`
+function visibleHomeRecommended(items: RecommendedItem[]): RecommendedItem[] {
+  return filterSucceededRecommendedItems(items).slice(0, 2)
 }
 
-function inboxSnapshot(): Pick<HomeData, 'inbox' | 'inboxPreview' | 'inboxAnalyzing'> {
+function cloneCard(card: DiscoveryItem): DiscoveryItem {
   return {
-    inbox: getInboxSummary(),
-    inboxPreview: getInboxPreviewItems(),
-    inboxAnalyzing: getInboxAnalyzingItems(),
+    ...card,
   }
 }
 
-function deckSnapshot(
-  items: DiscoveryItem[],
-  cursor: number
-): Pick<HomeData, 'featuredIndex' | 'featuredTotal' | 'featuredCursor' | 'current' | 'next'> {
-  const total = items.length
-  if (!total) {
-    return {
-      featuredCursor: 0,
-      featuredIndex: 0,
-      featuredTotal: 0,
-      current: null,
-      next: null,
-    }
-  }
-  const index = Math.min(Math.max(cursor, 0), total - 1)
+function applyRecommendedView() {
   return {
-    featuredCursor: index,
-    featuredIndex: index + 1,
-    featuredTotal: total,
-    current: items[index],
-    next: index + 1 < total ? items[index + 1] : null,
+    recommendedItems: visibleHomeRecommended(recommendedAll),
   }
 }
-
-const dismissedContent = new Set<string>()
-const acceptedContent = new Set<string>()
 
 let discoveryDeck: DiscoveryItem[] = []
 let discoveryLoaded = false
+let recommendedAll: RecommendedItem[] = []
+let recommendedLoaded = false
+let recommendedLock = false
 let feedLock = false
+const pendingFeedbackIds = new Set<string>()
+const seenAttempted = new Set<string>()
 
 Page({
   _gestureTimer: 0,
-  _inboxTimer: 0,
 
   data: {
     paddingTopPx: 56,
-    viewState: HOME_VIEW_STATE,
-    inbox: { total: 0, analyzing: 0, waiting: 0, done: 0 },
-    inboxPreview: [],
-    inboxAnalyzing: [],
-    discoveryFeedState: 'idle',
+    recommendedItems: [],
+    recommendedLoading: false,
+    recommendedError: false,
+    recommendedErrorMessage: '',
+    discoveryLoading: false,
+    discoveryError: false,
     discoveryErrorMessage: '',
-    discoveryRefreshing: false,
-    featuredIndex: 0,
-    featuredTotal: 0,
-    featuredCursor: 0,
+    discoveryCount: 0,
     current: null,
     next: null,
-    low: [],
-    modalVisible: false,
-    modalKicker: '',
-    modalPreview: '',
-    modalRaw: '',
-    sheetVisible: false,
-    composeVisible: false,
-    composeText: '',
+    homeRefreshing: false,
     gesture: { ...IDLE_GESTURE },
     deckEntering: false,
+    feedbackLocked: false,
+    composeText: '',
   } as HomeData,
 
   onLoad() {
     this.setData({
       paddingTopPx: getHomePaddingTopPx(),
-      viewState: HOME_VIEW_STATE,
-      ...inboxSnapshot(),
     })
+    void this.loadRecommended()
     void this.loadDiscoveryFeed()
   },
 
   onShow() {
-    this.setData(inboxSnapshot())
-    this.detectIncomingContent()
-    this.startInboxTicker()
-    if (!discoveryLoaded || this.data.discoveryFeedState === 'error') {
+    void this.loadRecommended()
+    if (!discoveryLoaded || this.data.discoveryError) {
       void this.loadDiscoveryFeed()
     }
   },
 
-  onHide() {
-    this.stopInboxTicker()
-  },
-
-  onUnload() {
-    this.stopInboxTicker()
-  },
-
   onPullDownRefresh() {
-    void this.loadDiscoveryFeed({ replace: true, fromRefresh: true })
+    void this.refreshHome()
   },
 
-  onDiscoveryRefresh() {
-    this.setData({ discoveryRefreshing: true })
-    void this.loadDiscoveryFeed({ replace: true, fromRefresh: true })
+  onHomeRefresh() {
+    this.setData({ homeRefreshing: true })
+    void this.refreshHome()
   },
 
-  stopRefreshers() {
-    this.setData({ discoveryRefreshing: false })
+  async refreshHome() {
+    await Promise.all([this.loadRecommended(), this.loadDiscoveryFeed()])
+    this.setData({ homeRefreshing: false })
     wx.stopPullDownRefresh()
   },
 
-  async loadDiscoveryFeed(options?: { replace?: boolean; fromRefresh?: boolean }) {
-    if (feedLock) {
-      if (options && options.fromRefresh) {
-        this.stopRefreshers()
-      }
-      return
-    }
-    feedLock = true
-    const replace = !!(options && options.replace)
-    const showAreaLoading =
-      !discoveryLoaded || this.data.discoveryFeedState === 'error'
-    if (showAreaLoading) {
-      this.setData({
-        discoveryFeedState: 'loading',
-        discoveryErrorMessage: '',
-        current: null,
-        next: null,
-        featuredIndex: 0,
-        featuredTotal: 0,
-      })
-    }
-    try {
-      const response = await listDiscoveries()
-      const deck = mapDiscoveryListToCardViewModels(response.items)
-      discoveryDeck = deck
-      discoveryLoaded = true
-      this.setData({
-        discoveryFeedState: deck.length ? 'ready' : 'empty',
-        discoveryErrorMessage: '',
-        ...deckSnapshot(deck, 0),
-        ...inboxSnapshot(),
-      })
-    } catch (error) {
-      const apiError = toApiError(error)
-      console.warn(`[home] discoveries ${apiError.code}`)
-      if (!discoveryLoaded || this.data.discoveryFeedState === 'error' || !discoveryDeck.length) {
-        this.setData({
-          discoveryFeedState: 'error',
-          discoveryErrorMessage: getDiscoveryFeedErrorMessage(apiError),
-          current: null,
-          next: null,
-          featuredIndex: 0,
-          featuredTotal: 0,
-        })
-      } else {
-        wx.showToast({ title: '暂时无法刷新发现', icon: 'none' })
-      }
-    } finally {
-      feedLock = false
-      if (replace || (options && options.fromRefresh)) {
-        this.stopRefreshers()
-      }
-    }
+  onRetryRecommended() {
+    void this.loadRecommended()
   },
 
   onRetryDiscovery() {
-    void this.loadDiscoveryFeed({ replace: true })
+    void this.loadDiscoveryFeed()
+  },
+
+  async loadRecommended() {
+    if (recommendedLock) {
+      return
+    }
+    recommendedLock = true
+    const showLoading = !recommendedLoaded || this.data.recommendedError
+    if (showLoading) {
+      this.setData({
+        recommendedLoading: true,
+        recommendedError: false,
+        recommendedErrorMessage: '',
+      })
+    }
+    try {
+      const response = await listMyUserSubmissions()
+      recommendedLoaded = true
+      const mapped = mapMySubmissionsToRecommendedViewModels(response.items)
+      const temps = recommendedAll.filter((item) => item.id.indexOf('temp-') === 0)
+      const pendingTemps = temps.filter((temp) => {
+        const discoveryId = temp.tempDiscoveryId
+        if (!discoveryId) {
+          return true
+        }
+        return !mapped.some((item) => item.originDiscoveryId === discoveryId)
+      })
+      recommendedAll = [...pendingTemps, ...mapped]
+      this.setData({
+        recommendedLoading: false,
+        recommendedError: false,
+        recommendedErrorMessage: '',
+        ...applyRecommendedView(),
+      })
+    } catch (error) {
+      const apiError = toApiError(error)
+      console.warn(`[home] submissions/mine ${apiError.code}`)
+      if (!recommendedLoaded) {
+        this.setData({
+          recommendedLoading: false,
+          recommendedError: true,
+          recommendedErrorMessage: getRecommendedListErrorMessage(apiError),
+          recommendedItems: [],
+        })
+        recommendedAll = []
+      } else {
+        this.setData({
+          recommendedLoading: false,
+        })
+      }
+    } finally {
+      recommendedLock = false
+    }
+  },
+
+  async loadDiscoveryFeed() {
+    if (feedLock) {
+      return
+    }
+    feedLock = true
+    const showLoading = !discoveryLoaded || this.data.discoveryError
+    if (showLoading) {
+      this.setData({
+        discoveryLoading: true,
+        discoveryError: false,
+        discoveryErrorMessage: '',
+        current: null,
+        next: null,
+        discoveryCount: 0,
+      })
+    }
+    try {
+      const response = await listDiscoveryFeed()
+      discoveryDeck = mapDiscoveryFeedToCardViewModels(response.items)
+      discoveryLoaded = true
+      pendingFeedbackIds.clear()
+      this.applyDeck({ entering: false })
+      this.setData({
+        discoveryLoading: false,
+        discoveryError: false,
+        discoveryErrorMessage: '',
+        feedbackLocked: false,
+      })
+    } catch (error) {
+      const apiError = toApiError(error)
+      console.warn(`[home] feed ${apiError.code}`)
+      if (!discoveryLoaded || this.data.discoveryError || !discoveryDeck.length) {
+        discoveryDeck = []
+        this.setData({
+          discoveryLoading: false,
+          discoveryError: true,
+          discoveryErrorMessage: getDiscoveryFeedErrorMessage(apiError),
+          current: null,
+          next: null,
+          discoveryCount: 0,
+          feedbackLocked: false,
+        })
+      } else {
+        this.setData({
+          discoveryLoading: false,
+        })
+      }
+    } finally {
+      feedLock = false
+    }
+  },
+
+  applyDeck(options?: { entering?: boolean }) {
+    const current = discoveryDeck[0] || null
+    const next = discoveryDeck[1] || null
+    const entering = !!(options && options.entering)
+    this.setData({
+      current,
+      next,
+      discoveryCount: discoveryDeck.length,
+      deckEntering: entering,
+      feedbackLocked: !!(current && pendingFeedbackIds.has(current.id)),
+    })
+    if (entering) {
+      wx.nextTick(() => {
+        this.setData({ deckEntering: true })
+        setTimeout(() => {
+          this.setData({ deckEntering: false })
+        }, 280)
+      })
+    }
+    this.maybeMarkCurrentSeen(current)
   },
 
   onShareAppMessage() {
@@ -264,79 +288,48 @@ Page({
     }
   },
 
-  detectIncomingContent() {
-    const shared = takeIncomingShare()
-    if (shared) {
-      this.openContentModal('收到转发内容', shared)
-      return
-    }
+  onOpenAllRecommended() {
+    wx.navigateTo({ url: '/pages/submissions/index' })
+  },
+
+  onComposeInput(event: { detail: { value: string } }) {
+    this.setData({ composeText: event.detail.value })
+  },
+
+  onPasteClipboard() {
     wx.getClipboardData({
       success: (res) => {
-        const raw = (res.data || '').trim()
-        if (!raw) {
+        const next = (res.data || '').trim()
+        if (!next) {
+          wx.showToast({ title: '剪贴板为空', icon: 'none' })
           return
         }
-        this.openContentModal('检测到剪贴板内容', raw)
+        this.setData({ composeText: next })
+      },
+      fail: () => {
+        wx.showToast({ title: '无法读取剪贴板，请手动粘贴', icon: 'none' })
       },
     })
   },
 
-  openContentModal(kicker: string, raw: string, force = false) {
-    if (!raw) {
-      return
-    }
-    if (!force && (dismissedContent.has(raw) || acceptedContent.has(raw))) {
+  onComposeCheck() {
+    const raw = (this.data.composeText || '').trim()
+    if (!startCheckFlow(raw)) {
       return
     }
     this.setData({
-      modalVisible: true,
-      sheetVisible: false,
-      composeVisible: false,
-      modalKicker: kicker,
-      modalRaw: raw,
-      modalPreview: previewText(raw),
+      composeText: '',
     })
   },
 
-  onDialogTap() {},
-
-  onModalIgnore() {
-    const raw = this.data.modalRaw
-    if (raw) {
-      dismissedContent.add(raw)
-    }
-    this.setData({
-      modalVisible: false,
-      modalRaw: '',
-      modalPreview: '',
-    })
-  },
-
-  onModalAccept() {
-    const raw = this.data.modalRaw.trim()
-    if (!raw) {
-      this.setData({ modalVisible: false })
+  onOpenRecommended(event: { detail?: { id?: string }; currentTarget?: { dataset: { id?: string } } }) {
+    const id =
+      (event.detail && event.detail.id) ||
+      (event.currentTarget && event.currentTarget.dataset && event.currentTarget.dataset.id)
+    if (!id || id.indexOf('temp-') === 0) {
       return
     }
-    acceptedContent.add(raw)
-    addInboxEntry(raw, this.data.modalKicker.indexOf('转发') >= 0 ? 'link' : 'clipboard')
-    this.setData({
-      modalVisible: false,
-      modalRaw: '',
-      modalPreview: '',
-      ...inboxSnapshot(),
-    })
-    wx.showToast({ title: '已加入待处理', icon: 'none' })
-  },
-
-  onModalCheck() {
-    const raw = this.data.modalRaw.trim()
-    this.setData({
-      modalVisible: false,
-      modalRaw: '',
-      modalPreview: '',
-    })
-    startCheckFlow(raw)
+    openSubmissionCheck(id)
   },
 
   clearGestureTimer() {
@@ -372,7 +365,7 @@ Page({
     })
   },
 
-  onDecision(event: { detail: { action?: 'inbox' | 'deprioritize' } }) {
+  onDecision(event: { detail: { action?: 'save' | 'deprioritize' } }) {
     const action = event.detail.action
     const direction = action === 'deprioritize' ? 'left' : 'right'
     this.clearGestureTimer()
@@ -391,157 +384,196 @@ Page({
     }, 320)
   },
 
-  dismissCurrentCard() {
-    const cursor = this.data.featuredCursor
-    if (!discoveryDeck.length) {
+  maybeMarkCurrentSeen(card: DiscoveryItem | null) {
+    if (!card) {
       return
     }
-    discoveryDeck.splice(cursor, 1)
-    const nextState: DiscoveryFeedState = discoveryDeck.length ? 'ready' : 'exhausted'
-    const nextCursor =
-      nextState === 'exhausted'
-        ? 0
-        : cursor >= discoveryDeck.length
-          ? discoveryDeck.length - 1
-          : cursor
+    if (card.seenAt) {
+      return
+    }
+    if (seenAttempted.has(card.id)) {
+      return
+    }
+    seenAttempted.add(card.id)
+    void markDiscoverySeen(card.id).then(
+      () => {
+        const current = discoveryDeck.find((item) => item.id === card.id)
+        if (current) {
+          current.seenAt = current.seenAt || new Date().toISOString()
+        }
+      },
+      (error) => {
+        seenAttempted.delete(card.id)
+        const apiError = toApiError(error)
+        console.warn(`[home] seen ${card.id} ${apiError.code}`)
+      }
+    )
+  },
+
+  setFeedbackLocked(id: string, locked: boolean) {
+    if (locked) {
+      pendingFeedbackIds.add(id)
+    } else {
+      pendingFeedbackIds.delete(id)
+    }
+    const current = discoveryDeck[0]
     this.setData({
-      deckEntering: false,
-      discoveryFeedState: nextState,
-      ...deckSnapshot(discoveryDeck, nextCursor),
-      ...inboxSnapshot(),
+      feedbackLocked: !!(current && pendingFeedbackIds.has(current.id)),
     })
-    wx.nextTick(() => {
-      this.setData({ deckEntering: true })
-      setTimeout(() => {
-        this.setData({ deckEntering: false })
-      }, 280)
-    })
-  },
-
-  onOpenInbox() {
-    wx.navigateTo({ url: '/pages/inbox/index' })
-  },
-
-  startInboxTicker() {
-    this.stopInboxTicker()
-    this._inboxTimer = setInterval(() => {
-      const changed = advanceAnalyzingItems()
-      if (changed) {
-        this.setData(inboxSnapshot())
-      }
-      if (!getInboxAnalyzingItems().length) {
-        this.stopInboxTicker()
-      }
-    }, ANALYZE_STEP_DELAY_MS)
-  },
-
-  stopInboxTicker() {
-    if (this._inboxTimer) {
-      clearInterval(this._inboxTimer)
-      this._inboxTimer = 0
-    }
-  },
-
-  onOpenInboxItem(event: { detail: { id?: string } }) {
-    const id = event.detail.id
-    const items = getInboxItems()
-    const hit = items.find((item) => item.id === id)
-    if (hit) {
-      openInboxEntry(hit)
-      return
-    }
-    wx.navigateTo({ url: '/pages/inbox/index' })
   },
 
   onOpenDiscovery() {
     return
   },
 
-  onAddContent() {
+  onSaveDiscovery(event: { detail: { id?: string } }) {
+    const id = event.detail.id || (this.data.current && this.data.current.id)
+    if (!id) {
+      return
+    }
+    void this.acceptCurrentCard(id)
+  },
+
+  onDeprioritizeDiscovery(event: { detail: { id?: string } }) {
+    const id = event.detail.id || (this.data.current && this.data.current.id)
+    if (!id) {
+      return
+    }
+    void this.deprioritizeCurrentCard(id)
+  },
+
+  async acceptCurrentCard(id: string) {
+    if (pendingFeedbackIds.has(id)) {
+      return
+    }
+    const current = discoveryDeck[0]
+    if (!current || current.id !== id) {
+      return
+    }
+    this.setFeedbackLocked(id, true)
+    const acceptedCard = cloneCard(current)
+    const previousAll = recommendedAll.slice()
+    const tempCard = createTempRecommendedFromDiscovery(acceptedCard)
+    discoveryDeck = discoveryDeck.slice(1)
+    recommendedAll = prependRecommendedItem(previousAll, tempCard)
     this.setData({
-      composeVisible: true,
-      composeText: '',
+      recommendedError: false,
+      ...applyRecommendedView(),
     })
+    this.applyDeck({ entering: true })
+    try {
+      const result = await acceptDiscovery(id)
+      const realCard = mapAcceptedSubmissionToRecommended(result.submission, acceptedCard.title)
+      recommendedAll = replaceRecommendedItem(recommendedAll, tempCard.id, realCard)
+      this.setData(applyRecommendedView())
+      this.setFeedbackLocked(id, false)
+      if (result.submission.status === 'pending') {
+        void this.processAcceptedSubmission(realCard)
+      } else if (result.submission.status === 'succeeded') {
+        this.setData(applyRecommendedView())
+      }
+    } catch (error) {
+      const apiError = toApiError(error)
+      console.warn(`[home] accept ${id} ${apiError.code}`)
+      discoveryDeck = [acceptedCard, ...discoveryDeck.filter((item) => item.id !== acceptedCard.id)]
+      recommendedAll = previousAll
+      this.setData(applyRecommendedView())
+      this.applyDeck({ entering: false })
+      this.setFeedbackLocked(id, false)
+      wx.showToast({
+        title: apiError.code === 'DISCOVERY_NOT_FOUND' ? '这条发现已不可用' : '操作没有保存，请重试',
+        icon: 'none',
+      })
+    }
   },
 
-  onCloseSheet() {
-    this.setData({ sheetVisible: false })
-  },
-
-  onAddFromClipboard() {
-    this.setData({ sheetVisible: false })
-    wx.getClipboardData({
-      success: (res) => {
-        const raw = (res.data || '').trim()
-        if (!raw) {
-          wx.showToast({ title: '剪贴板是空的', icon: 'none' })
-          return
+  async processAcceptedSubmission(item: RecommendedItem) {
+    const title = item.title
+    recommendedAll = patchRecommendedItem(recommendedAll, item.id, {
+      status: 'ingesting',
+      statusText: '读取中',
+    })
+    this.setData(applyRecommendedView())
+    try {
+      const detail = await processUserSubmission(item.id)
+      recommendedAll = replaceRecommendedItem(
+        recommendedAll,
+        item.id,
+        mapSubmissionDetailToRecommended(detail, title)
+      )
+      this.setData(applyRecommendedView())
+    } catch (error) {
+      const apiError = toApiError(error)
+      console.warn(`[home] process ${item.id} ${apiError.code}`)
+      if (apiError.code === 'REQUEST_TIMEOUT' || apiError.code === 'NETWORK_ERROR') {
+        recommendedAll = patchRecommendedItem(recommendedAll, item.id, {
+          status: 'checking',
+          statusText: '处理中',
+        })
+        this.setData(applyRecommendedView())
+        try {
+          const detail = await getUserSubmission(item.id)
+          recommendedAll = replaceRecommendedItem(
+            recommendedAll,
+            item.id,
+            mapSubmissionDetailToRecommended(detail, title)
+          )
+          this.setData(applyRecommendedView())
+        } catch (lookupError) {
+          console.warn(`[home] process-check ${item.id} ${toApiError(lookupError).code}`)
         }
-        this.openContentModal('检测到剪贴板内容', raw, true)
-      },
-    })
+        return
+      }
+      if (apiError.code === 'SUBMISSION_ALREADY_PROCESSING') {
+        recommendedAll = patchRecommendedItem(recommendedAll, item.id, {
+          status: 'checking',
+          statusText: '处理中',
+        })
+        this.setData(applyRecommendedView())
+        return
+      }
+      recommendedAll = patchRecommendedItem(recommendedAll, item.id, {
+        status: 'failed',
+        statusText: '解析失败',
+      })
+      this.setData(applyRecommendedView())
+    }
   },
 
-  onCheckFromClipboard() {
-    this.setData({ sheetVisible: false })
-    wx.getClipboardData({
-      success: (res) => {
-        const raw = (res.data || '').trim()
-        startCheckFlow(raw)
-      },
-    })
-  },
-
-  onAddByPaste() {
-    this.setData({
-      sheetVisible: false,
-      composeVisible: true,
-      composeText: '',
-    })
-  },
-
-  onCloseCompose() {
-    this.setData({
-      composeVisible: false,
-      composeText: '',
-    })
-  },
-
-  onComposeInput(event: { detail: { value: string } }) {
-    this.setData({ composeText: event.detail.value })
-  },
-
-  onComposeAccept() {
-    const raw = (this.data.composeText || '').trim()
-    if (!raw) {
-      wx.showToast({ title: '先粘贴或输入内容', icon: 'none' })
+  async deprioritizeCurrentCard(id: string) {
+    if (pendingFeedbackIds.has(id)) {
       return
     }
-    addInboxEntry(raw, raw.indexOf('http') >= 0 ? 'link' : 'text')
-    this.setData({
-      composeVisible: false,
-      composeText: '',
-      ...inboxSnapshot(),
-    })
-    wx.showToast({ title: '已加入待处理', icon: 'none' })
-  },
-
-  onComposeCheck() {
-    const raw = (this.data.composeText || '').trim()
-    if (!startCheckFlow(raw)) {
+    const current = discoveryDeck[0]
+    if (!current || current.id !== id) {
       return
     }
-    this.setData({
-      composeVisible: false,
-      composeText: '',
-    })
-  },
-
-  onInbox() {
-    this.dismissCurrentCard()
-  },
-
-  onDeprioritize() {
-    this.dismissCurrentCard()
+    if (current.visualState === 'deprioritized') {
+      discoveryDeck = [...discoveryDeck.slice(1), cloneCard(current)]
+      this.applyDeck({ entering: true })
+      return
+    }
+    this.setFeedbackLocked(id, true)
+    const original = cloneCard(current)
+    const rest = discoveryDeck.slice(1).map(cloneCard)
+    const rotated = cloneCard(current)
+    rotated.visualState = 'deprioritized'
+    discoveryDeck = [...rest, rotated]
+    this.applyDeck({ entering: true })
+    try {
+      await updateDiscoveryDisposition(id, 'deprioritized')
+    } catch (error) {
+      const apiError = toApiError(error)
+      console.warn(`[home] disposition deprioritized ${id} ${apiError.code}`)
+      if (apiError.code !== 'DISCOVERY_NOT_FOUND') {
+        discoveryDeck = [original, ...rest]
+        this.applyDeck({ entering: false })
+        wx.showToast({ title: '操作没有保存，请重试', icon: 'none' })
+      } else {
+        wx.showToast({ title: '这条发现已不可用', icon: 'none' })
+      }
+    } finally {
+      this.setFeedbackLocked(id, false)
+    }
   },
 })

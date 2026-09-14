@@ -1,0 +1,11 @@
+<view class="reco-list">
+  <view
+    wx:for="{{items}}"
+    wx:key="id"
+    class="reco-list-item"
+    data-id="{{item.id}}"
+    bindtap="onItemTap"
+  >
+    <recommended-card item="{{item}}" layout="list" compact="{{compact}}" />
+  </view>
+</view>

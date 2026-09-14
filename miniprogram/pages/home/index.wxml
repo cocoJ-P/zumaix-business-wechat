@@ -8,78 +8,104 @@
   enhanced
   bounces="{{true}}"
   refresher-enabled="{{true}}"
-  refresher-triggered="{{discoveryRefreshing}}"
-  bindrefresherrefresh="onDiscoveryRefresh"
+  refresher-triggered="{{homeRefreshing}}"
+  bindrefresherrefresh="onHomeRefresh"
 >
 <view class="page" style="padding-top: {{paddingTopPx}}px;">
   <view class="brand">
-    <view class="brand-main">
-      <text class="brand-name">筑脉查查</text>
-      <text class="brand-tagline">看到机会，先查查。</text>
-    </view>
-    <view class="provider">
-      <image class="provider-logo" src="/images/brand/beichen.png" mode="aspectFit" />
-      <view class="provider-copy">
-        <text class="provider-name">北辰云社区</text>
-        <text class="provider-role">企业服务</text>
-      </view>
-    </view>
+    <text class="brand-name">筑脉查查</text>
+    <text class="brand-tagline">看到机会，先查查。</text>
   </view>
 
-  <inbox-panel
-    total="{{inbox.total}}"
-    analyzing="{{inbox.analyzing}}"
-    waiting="{{inbox.waiting}}"
-    done="{{inbox.done}}"
-    items="{{inboxPreview}}"
-    analyzingItems="{{inboxAnalyzing}}"
-    bind:more="onOpenInbox"
-    bind:itemtap="onOpenInboxItem"
-  />
-
-  <view class="check-entry" bindtap="onAddContent">
-    <text class="check-text">查一个机会</text>
+  <view class="check-entry">
+    <input
+      class="check-input"
+      value="{{composeText}}"
+      maxlength="8000"
+      confirm-type="search"
+      hold-keyboard
+      placeholder="粘贴链接或内容"
+      placeholder-class="check-placeholder"
+      bindinput="onComposeInput"
+      bindconfirm="onComposeCheck"
+    />
+    <text class="check-action" catchtap="onPasteClipboard">粘贴</text>
+    <text class="check-cta" catchtap="onComposeCheck">查查</text>
   </view>
 
-  <view class="discover-head">
-    <text class="discover-title">为你发现</text>
-    <text wx:if="{{featuredTotal}}" class="discover-index">{{featuredIndex}} / {{featuredTotal}}</text>
+  <view class="section reco-section">
+    <view class="section-head">
+      <text class="section-title">为您推荐</text>
+      <text class="section-action" bindtap="onOpenAllRecommended">显示全部</text>
+    </view>
+
+    <block wx:if="{{recommendedLoading}}">
+      <view class="reco-status">
+        <text class="status-copy">正在加载内容…</text>
+      </view>
+    </block>
+    <block wx:elif="{{recommendedError}}">
+      <view class="reco-status">
+        <text class="status-copy">暂时无法加载内容</text>
+        <text class="status-retry" bindtap="onRetryRecommended">重新加载</text>
+      </view>
+    </block>
+    <block wx:elif="{{!recommendedItems.length}}">
+      <view class="reco-empty">
+        <text class="reco-empty-title">还没有解析完成的内容</text>
+        <text class="reco-empty-sub">粘贴链接、内容，或右滑你想继续了解的发现。</text>
+      </view>
+    </block>
+    <block wx:else>
+      <recommended-list items="{{recommendedItems}}" compact="{{true}}" bind:itemtap="onOpenRecommended" />
+    </block>
   </view>
 
-  <block wx:if="{{discoveryFeedState === 'loading'}}">
-    <view class="discover-placeholder">
-      <text class="discover-loading">正在发现适合你的机会…</text>
+  <view class="section discover-section">
+    <view class="section-head">
+      <text class="section-title">为您推送</text>
+      <text wx:if="{{discoveryCount}}" class="section-meta">{{discoveryCount}} 条发现</text>
     </view>
-  </block>
-  <block wx:elif="{{discoveryFeedState === 'error'}}">
-    <empty-state title="暂时无法加载「为你发现」" description="{{discoveryErrorMessage}}" />
-    <view class="discover-retry" bindtap="onRetryDiscovery">重新加载</view>
-  </block>
-  <block wx:elif="{{discoveryFeedState === 'empty'}}">
-    <empty-state title="暂时没有新的发现" description="有新的机会或服务内容时，会出现在这里。" />
-  </block>
-  <block wx:elif="{{discoveryFeedState === 'exhausted'}}">
-    <empty-state title="暂时没有更多发现" description="下拉刷新可以重新查看。" />
-    <view class="discover-retry" bindtap="onRetryDiscovery">重新加载</view>
-  </block>
-  <block wx:elif="{{current}}">
-    <view class="deck">
-      <view class="current-slot {{deckEntering ? 'is-entering' : ''}}">
-        <discovery-card
-          item="{{current}}"
-          size="large"
-          bind:gesturechange="onGestureChange"
-          bind:decision="onDecision"
-          bind:inbox="onInbox"
-          bind:deprioritize="onDeprioritize"
-          bind:open="onOpenDiscovery"
-        />
+
+    <block wx:if="{{discoveryLoading}}">
+      <view class="discover-placeholder">
+        <text class="discover-loading">正在发现适合你的机会…</text>
       </view>
-      <view wx:if="{{next}}" class="peek">
-        <discovery-card item="{{next}}" size="large" />
+    </block>
+    <block wx:elif="{{discoveryError}}">
+      <empty-state title="暂时无法加载「为您推送」" description="{{discoveryErrorMessage}}" />
+      <view class="discover-retry" bindtap="onRetryDiscovery">重新加载</view>
+    </block>
+    <block wx:elif="{{!current}}">
+      <empty-state title="暂时没有新的发现" description="有新的机会或服务内容时，会出现在这里。" />
+    </block>
+    <block wx:else>
+      <view class="deck">
+        <view class="current-slot {{deckEntering ? 'is-entering' : ''}}">
+          <discovery-card
+            item="{{current}}"
+            size="large"
+            locked="{{feedbackLocked}}"
+            bind:gesturechange="onGestureChange"
+            bind:decision="onDecision"
+            bind:save="onSaveDiscovery"
+            bind:deprioritize="onDeprioritizeDiscovery"
+            bind:open="onOpenDiscovery"
+          />
+        </view>
+        <view wx:if="{{next}}" class="peek">
+          <view class="peek-card visual-{{next.visualState === 'deprioritized' ? 'plain' : 'fresh'}}">
+            <view wx:if="{{next.kind || next.eventStatus}}" class="peek-event">
+              <text wx:if="{{next.kind}}" class="peek-kind">{{next.kind}}</text>
+              <text wx:if="{{next.kind && next.eventStatus}}" class="peek-sep">·</text>
+              <text wx:if="{{next.eventStatus}}" class="peek-status">{{next.eventStatus}}</text>
+            </view>
+            <text class="peek-title">{{next.title}}</text>
+          </view>
+        </view>
       </view>
-    </view>
-  </block>
+    </block>
+  </view>
 </view>
 </scroll-view>
 
@@ -92,44 +118,3 @@
   rawDx="{{gesture.rawDx}}"
 />
 
-<view wx:if="{{sheetVisible}}" class="mask" catchtap="onCloseSheet">
-  <view class="sheet" catchtap="onDialogTap">
-    <text class="sheet-kicker">添加内容</text>
-    <text class="sheet-item" bindtap="onAddFromClipboard">从剪贴板加入</text>
-    <text class="sheet-item" bindtap="onAddByPaste">粘贴链接或文本</text>
-    <text class="sheet-item" bindtap="onCheckFromClipboard">开始查查剪贴板</text>
-    <text class="sheet-cancel" bindtap="onCloseSheet">取消</text>
-  </view>
-</view>
-
-<view wx:if="{{composeVisible}}" class="mask" catchtap="onCloseCompose">
-  <view class="dialog" catchtap="onDialogTap">
-    <text class="dialog-kicker">查一个机会</text>
-    <textarea
-      class="compose"
-      value="{{composeText}}"
-      maxlength="400"
-      auto-height
-      placeholder="粘贴链接或正文"
-      placeholder-class="compose-ph"
-      bindinput="onComposeInput"
-    />
-    <view class="dialog-actions">
-      <text class="dialog-ignore" bindtap="onCloseCompose">取消</text>
-      <text class="dialog-accept" bindtap="onComposeAccept">加入待处理</text>
-      <text class="dialog-accept" bindtap="onComposeCheck">开始查查</text>
-    </view>
-  </view>
-</view>
-
-<view wx:if="{{modalVisible}}" class="mask" catchtap="onModalIgnore">
-  <view class="dialog" catchtap="onDialogTap">
-    <text class="dialog-kicker">{{modalKicker}}</text>
-    <text class="dialog-body">「{{modalPreview}}」</text>
-    <view class="dialog-actions">
-      <text class="dialog-ignore" bindtap="onModalIgnore">忽略</text>
-      <text class="dialog-accept" bindtap="onModalAccept">加入待处理</text>
-      <text wx:if="{{modalKicker !== '检测到剪贴板内容'}}" class="dialog-accept" bindtap="onModalCheck">开始查查</text>
-    </view>
-  </view>
-</view>

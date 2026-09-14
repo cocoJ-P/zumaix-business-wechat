@@ -1,0 +1,7 @@
+.reco-list {
+  width: 100%;
+}
+
+.reco-list-item:last-child .reco-card-list {
+  border-bottom: none;
+}

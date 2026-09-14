@@ -57,16 +57,23 @@ Page({
     showProcess: false,
   } as CheckData,
 
-  onLoad() {
+  onLoad(query: { submissionId?: string }) {
     this._alive = true
     const input = takePendingCheck()
-    if (!input) {
-      this.setData({ phase: 'idle' })
+    if (input) {
+      this._input = input
+      this._submissionId = undefined
+      void this.startCreate()
       return
     }
-    this._input = input
-    this._submissionId = undefined
-    void this.startCreate()
+    const submissionId = query && query.submissionId
+    if (submissionId) {
+      this._input = undefined
+      this._submissionId = submissionId
+      void this.openExisting(submissionId)
+      return
+    }
+    this.setData({ phase: 'idle' })
   },
 
   onUnload() {
@@ -137,6 +144,35 @@ Page({
       errorMessage: '',
     })
     void this.runProcess()
+  },
+
+  async openExisting(submissionId: string) {
+    if (this._flowLock) {
+      return
+    }
+    this._flowLock = true
+    this.safeSetData({
+      phase: 'processing',
+      busy: true,
+      busyTitle: '正在加载查查记录…',
+      busyMessage: '',
+      errorMessage: '',
+      errorStage: null,
+    })
+    try {
+      const detail = await getUserSubmission(submissionId)
+      if (!this._alive) {
+        return
+      }
+      if (detail.submission.status === 'pending') {
+        this.unlockFlow()
+        this.startProcessOnly()
+        return
+      }
+      this.applySubmissionDetail(detail, 'get')
+    } catch (error) {
+      this.failProcess(error)
+    }
   },
 
   async runProcess() {

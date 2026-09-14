@@ -42,6 +42,20 @@ export function startCheckFlow(raw: string, kind?: CheckInputKind): boolean {
   return true
 }
 
+export function openSubmissionCheck(submissionId: string): boolean {
+  if (!submissionId || checkFlowLocked) {
+    return false
+  }
+  checkFlowLocked = true
+  wx.navigateTo({
+    url: `/pages/check/index?submissionId=${encodeURIComponent(submissionId)}`,
+    fail: () => {
+      checkFlowLocked = false
+    },
+  })
+  return true
+}
+
 export function openInboxEntry(item: InboxItem): void {
   if (item.status === 'done' && item.opportunityId) {
     openOpportunityDetail(item.opportunityId)
