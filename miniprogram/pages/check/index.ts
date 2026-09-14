@@ -1,10 +1,11 @@
 import { ApiError, toApiError } from '../../api/errors'
 import {
+  createServiceCase,
   createUserSubmission,
   getUserSubmission,
   processUserSubmission,
 } from '../../api/submissions'
-import type { UserSubmissionDetail } from '../../api/types'
+import type { LinkedServiceCase, SubmissionStatus, UserSubmissionDetail } from '../../api/types'
 import type { CheckInput } from '../../types/index'
 import { releaseCheckFlowLock, takePendingCheck } from '../../utils/checkSession'
 import {
@@ -18,6 +19,14 @@ import type {
   ErrorStage,
   IntelligenceViewModel,
 } from '../../utils/intelligenceView'
+import {
+  emptyCheckServicePanel,
+  getContinueToServiceErrorMessage,
+  isContinueIdentityError,
+  linkedServiceCaseFromServiceCase,
+  projectCheckServicePanel,
+} from '../../utils/submissionView'
+import type { CheckServicePanel } from '../../utils/submissionView'
 
 type CheckData = {
   phase: CheckPhase
@@ -31,6 +40,13 @@ type CheckData = {
   view: IntelligenceViewModel
   showMaterials: boolean
   showProcess: boolean
+  continueToServicePending: boolean
+  canContinueToService: boolean
+  showContinueCta: boolean
+  showServiceStatus: boolean
+  serviceStatusText: string
+  serviceStatusHint: string
+  continueButtonText: string
 }
 
 function isAmbiguousNetworkError(error: ApiError): boolean {
@@ -42,6 +58,8 @@ Page({
   _flowLock: false,
   _input: undefined as CheckInput | undefined,
   _submissionId: undefined as string | undefined,
+  _submissionStatus: undefined as SubmissionStatus | undefined,
+  _linkedServiceCase: null as LinkedServiceCase | null,
 
   data: {
     phase: 'idle',
@@ -55,6 +73,8 @@ Page({
     view: emptyIntelligenceView(),
     showMaterials: false,
     showProcess: false,
+    continueToServicePending: false,
+    ...emptyCheckServicePanel(),
   } as CheckData,
 
   onLoad(query: { submissionId?: string }) {
@@ -92,6 +112,32 @@ Page({
     this._flowLock = false
   },
 
+  resetServiceState() {
+    this._submissionStatus = undefined
+    this._linkedServiceCase = null
+    return {
+      continueToServicePending: false,
+      ...emptyCheckServicePanel(),
+    }
+  },
+
+  servicePanelPatch(
+    linked: LinkedServiceCase | null,
+    pending?: boolean
+  ): Partial<CheckData> {
+    const status = this._submissionStatus || 'pending'
+    const panel: CheckServicePanel = projectCheckServicePanel(status, linked, pending)
+    return {
+      continueToServicePending: !!pending,
+      ...panel,
+    }
+  },
+
+  applyLinkedServiceCase(linked: LinkedServiceCase | null) {
+    this._linkedServiceCase = linked
+    this.safeSetData(this.servicePanelPatch(linked, false))
+  },
+
   startCreate() {
     const input = this._input
     if (!input || this._flowLock) {
@@ -111,6 +157,7 @@ Page({
       view: emptyIntelligenceView(),
       showMaterials: false,
       showProcess: false,
+      ...this.resetServiceState(),
     })
     void this.runCreate(input)
   },
@@ -221,6 +268,8 @@ Page({
 
   applySubmissionDetail(detail: UserSubmissionDetail, from: 'process' | 'get') {
     const status = detail.submission.status
+    this._submissionStatus = status
+    this._linkedServiceCase = detail.linked_service_case || null
     if (status === 'succeeded') {
       this.unlockFlow()
       this.safeSetData({
@@ -231,6 +280,7 @@ Page({
         view: mapSubmissionDetailToIntelligenceViewModel(detail),
         showMaterials: false,
         showProcess: false,
+        ...this.servicePanelPatch(this._linkedServiceCase, false),
       })
       return
     }
@@ -252,6 +302,8 @@ Page({
           'process',
           kind
         ),
+        ...emptyCheckServicePanel(),
+        continueToServicePending: false,
       })
       return
     }
@@ -266,6 +318,8 @@ Page({
         errorMessage: from === 'get'
           ? '这次查查仍在处理中，请稍后再检查。'
           : '任务仍在处理中，请稍后重试',
+        ...emptyCheckServicePanel(),
+        continueToServicePending: false,
       })
       return
     }
@@ -277,6 +331,8 @@ Page({
       errorAction: from === 'get' ? 'retry' : 'check',
       retryButtonText: from === 'get' ? '重新分析' : '检查结果',
       errorMessage: '任务仍在处理中，请稍后重试',
+      ...emptyCheckServicePanel(),
+      continueToServicePending: false,
     })
   },
 
@@ -434,6 +490,7 @@ Page({
       view: emptyIntelligenceView(),
       showMaterials: false,
       showProcess: false,
+      ...this.resetServiceState(),
     })
     wx.navigateBack({
       fail: () => {
@@ -466,5 +523,89 @@ Page({
         wx.showToast({ title: '已复制内容中提到的官方链接', icon: 'none' })
       },
     })
+  },
+
+  onContinueToService() {
+    if (this.data.continueToServicePending || !this.data.canContinueToService) {
+      return
+    }
+    const submissionId = this._submissionId
+    if (!submissionId) {
+      return
+    }
+    this.safeSetData(this.servicePanelPatch(this._linkedServiceCase, true))
+    void this.runCreateServiceCase(submissionId)
+  },
+
+  async runCreateServiceCase(submissionId: string) {
+    try {
+      const result = await createServiceCase(submissionId)
+      if (!this._alive) {
+        return
+      }
+      this.applyLinkedServiceCase(linkedServiceCaseFromServiceCase(result.service_case))
+      wx.showToast({ title: '已进入办理流程', icon: 'none' })
+    } catch (error) {
+      await this.handleContinueError(error, submissionId)
+    }
+  },
+
+  async handleContinueError(error: unknown, submissionId: string) {
+    const apiError = toApiError(error)
+    console.warn(`[check] service-case ${apiError.code}`)
+    if (apiError.code === 'SUBMISSION_NOT_FOUND') {
+      this._submissionId = undefined
+      this._linkedServiceCase = null
+      this.safeSetData({
+        continueToServicePending: false,
+        ...emptyCheckServicePanel(),
+      })
+      wx.showToast({ title: getContinueToServiceErrorMessage(apiError), icon: 'none' })
+      return
+    }
+    if (isContinueIdentityError(apiError)) {
+      this.safeSetData(this.servicePanelPatch(this._linkedServiceCase, false))
+      wx.showToast({ title: getContinueToServiceErrorMessage(apiError), icon: 'none' })
+      return
+    }
+    if (apiError.code === 'SUBMISSION_NOT_READY_FOR_SERVICE') {
+      await this.refreshSubmissionAfterContinue(submissionId, 'not-ready')
+      return
+    }
+    if (apiError.code === 'REQUEST_TIMEOUT' || apiError.code === 'NETWORK_ERROR') {
+      await this.refreshSubmissionAfterContinue(submissionId, 'timeout')
+      return
+    }
+    this.safeSetData(this.servicePanelPatch(this._linkedServiceCase, false))
+    wx.showToast({ title: getContinueToServiceErrorMessage(apiError), icon: 'none' })
+  },
+
+  async refreshSubmissionAfterContinue(
+    submissionId: string,
+    reason: 'timeout' | 'not-ready'
+  ) {
+    try {
+      const detail = await getUserSubmission(submissionId)
+      if (!this._alive) {
+        return
+      }
+      this.applySubmissionDetail(detail, 'get')
+      if (reason === 'timeout') {
+        if (detail.linked_service_case) {
+          return
+        }
+        wx.showToast({ title: '暂时无法进入办理流程，请重试', icon: 'none' })
+        return
+      }
+      wx.showToast({ title: '当前内容尚未完成解析', icon: 'none' })
+    } catch (lookupError) {
+      const lookup = toApiError(lookupError)
+      console.warn(`[check] service-case-reconcile ${lookup.code}`)
+      this.safeSetData(this.servicePanelPatch(this._linkedServiceCase, false))
+      wx.showToast({
+        title: reason === 'timeout' ? '网络异常，请稍后重试' : getContinueToServiceErrorMessage(lookup),
+        icon: 'none',
+      })
+    }
   },
 })

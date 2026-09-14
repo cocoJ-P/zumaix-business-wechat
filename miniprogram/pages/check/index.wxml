@@ -108,6 +108,24 @@
 
     <text class="disclaimer">当前结果是对输入内容的结构化理解，不代表机会真实性已经完成验证。</text>
 
+    <view wx:if="{{showContinueCta}}" class="next-step">
+      <section-header title="下一步" />
+      <text class="next-copy">如果需要继续推进这项服务，可以进入办理流程。</text>
+      <view class="action next-action">
+        <primary-button
+          text="{{continueButtonText}}"
+          disabled="{{continueToServicePending}}"
+          bind:tap="onContinueToService"
+        />
+      </view>
+    </view>
+
+    <view wx:elif="{{showServiceStatus}}" class="service-panel">
+      <section-header title="服务状态" />
+      <text class="service-title">{{serviceStatusText}}</text>
+      <text class="service-copy">{{serviceStatusHint}}</text>
+    </view>
+
     <view class="action">
       <secondary-button text="分析新内容" bind:tap="onNewAnalysis" />
     </view>

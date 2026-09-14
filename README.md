@@ -5,10 +5,10 @@
 当前阶段：
 
 ```text
-D5.2.3.2 Mini Program Home Workflow Correction
+D6.2 Mini Program Continue-to-Service
 ```
 
-首页输入入口提交 URL / 正文；「为您推荐」是当前用户的 UserSubmission 工作列表；「为你发现」右滑会 accept 进同一解析工作流。机会 Tab 仍基于 Mock Data。
+首页输入入口提交 URL / 正文；「为您推荐」是当前用户的 UserSubmission 工作列表；「为您推送」右滑会 accept 进同一解析工作流。解析完成后，用户必须明确点击「继续办理」才会创建 ServiceCase。机会 Tab 仍基于 Mock Data。
 
 用微信开发者工具打开本目录即可编译预览。AppID 已保留在 `project.config.json`。
 
@@ -184,25 +184,34 @@ GET /api/user-submissions/mine
 当前用户已经进入解析工作流的内容
 
 首页列表只展示：
-status = succeeded（已解析）
+status = succeeded 的条目（含已进入服务办理的）
+
+主状态：
+待处理 → 读取中 → 分析中 → 已解析
+用户点击「继续办理」
+→ 待服务
+未来：
+→ 处理中 → 已完成 / 已关闭
 
 右侧「显示全部」进入完整工作列表：
-待处理 / 读取中 / 分析中 / 已解析 / 解析失败
+待处理 / 读取中 / 分析中 / 已解析 / 解析失败 / 待服务 / 处理中 / 已完成 / 已关闭
 
 来源：
 - 用户主动输入（origin_type=user_input）
-- 「为你发现」右滑接受（origin_type=discovery）
+- 「为您推送」右滑接受（origin_type=discovery）
 
-为你发现
+为您推送
 =
 GET /api/discoveries/feed
 =
 尚未判断（fresh）+ 暂时没那么重要（deprioritized）
 ```
 
-输入区域是 Action / Entry，不是第三块首页业务模块。真正两个核心内容组件仍是「为您推荐」和「为你发现」。Bottom Tabs 保持。
+输入区域是 Action / Entry，不是第三块首页业务模块。真正两个核心内容组件仍是「为您推荐」和「为您推送」。Bottom Tabs 保持。
 
 待处理不再单独占一块首页 Section。首页「为您推荐」是纵向 List，只展示解析完成的条目；右侧「显示全部」查看全部状态。
+
+UserSubmission succeeded ≠ 自动进入服务办理。只有用户在解析结果页点击「继续办理」，才会 POST `/api/user-submissions/{id}/service-case` 并得到 ServiceCase(open)。Discovery 右滑 Accept 只创建 UserSubmission，不会创建 ServiceCase。
 
 视觉语义：
 
@@ -223,8 +232,44 @@ disposition = deprioritized
 =
 UserSubmission 工作列表
 =
-首页纵向 List 只展示已解析；「显示全部」查看全部状态
+首页纵向 List 只展示已解析（及后续待服务等）；「显示全部」查看全部状态
 ```
+
+## Continue to Service
+
+```text
+UserSubmission
+↓
+pending / ingesting / analyzing / succeeded
+↓
+用户查看解析结果
+↓
+明确点击「继续办理」
+↓
+POST /api/user-submissions/{id}/service-case
+↓
+ServiceCase(open)
+```
+
+两次用户意图：
+
+```text
+Discovery 右滑 Accept
+=
+我愿意进一步了解这条机会
+=
+UserSubmission
+
+结果页「继续办理」
+=
+我决定真正开始推进这件事
+=
+ServiceCase
+```
+
+UserSubmission 仍是内容解析 / 理解。ServiceCase 是独立的企业服务办理对象。不要把 ServiceCase.status 写回 Submission.status。首页推荐卡根据 `linked_service_case` 投影显示后续状态，不调用 `/service-cases/mine`。
+
+首页推荐卡不直接创建 Case。继续办理只出现在 Check 解析结果页：`succeeded` 且 `linked_service_case = null`。
 
 ## Discovery Feed
 
@@ -301,14 +346,23 @@ saved ≠ 首页「为您推荐」
 UserSubmission = 首页「为您推荐」
 deprioritized ≠ 从 Feed 删除
 看过（seen）≠ 已经判断
-succeeded submission = 未来 Feishu workflow input（本阶段不实现飞书）
+succeeded submission = 未来可继续办理的输入（本阶段不自动创建 ServiceCase）
+点击「继续办理」= ServiceCase(open)
 ```
 
 尚未实现：
 
 ```text
-D5.3 Service Frontend Feedback Workspace
+D6.3 Service Frontend Case Workspace
+D6.4 Feishu Adapter
+D6.5 Outbound Sync
+D6.6 Feishu Status Sync
+D6.7 Retry
+D6.8 Mini Program Case Status
+ServiceCase Status Mutation API
 飞书
+ServiceCase 独立用户页
+取消办理 / reopen
 Saved Detail / 取消保存 / Undo
 Push / Notification
 Matching
@@ -323,5 +377,5 @@ Opportunity Resolution
 下一阶段：
 
 ```text
-D5.3 Service Frontend Feedback Workspace
+D6.3 Service Frontend Case Workspace
 ```

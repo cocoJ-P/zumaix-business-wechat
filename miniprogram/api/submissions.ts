@@ -5,6 +5,7 @@ import {
 } from './config'
 import { request } from './client'
 import type {
+  CreateServiceCaseResponse,
   CreateUserSubmissionRequest,
   CreateUserSubmissionResponse,
   UserSubmissionDetail,
@@ -48,6 +49,16 @@ export function getUserSubmission(
   return request<UserSubmissionDetail>({
     path: `/api/user-submissions/${submissionId}`,
     method: 'GET',
+    timeout: REQUEST_TIMEOUT_MS,
+  })
+}
+
+export function createServiceCase(
+  submissionId: string
+): Promise<CreateServiceCaseResponse> {
+  return request<CreateServiceCaseResponse>({
+    path: `/api/user-submissions/${submissionId}/service-case`,
+    method: 'POST',
     timeout: REQUEST_TIMEOUT_MS,
   })
 }

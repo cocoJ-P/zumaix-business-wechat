@@ -156,6 +156,35 @@ export type CreateUserSubmissionResponse = {
   enterprise: CurrentIdentityEnterprise
 }
 
+export type ServiceCaseStatus = 'open' | 'in_progress' | 'completed' | 'closed'
+
+export type LinkedServiceCase = {
+  id: string
+  status: ServiceCaseStatus
+  created_at: string
+  updated_at: string
+  completed_at: string | null
+  closed_at: string | null
+}
+
+export type ServiceCase = {
+  id: string
+  enterprise_id: string
+  created_by_user_id: string
+  submission_id: string
+  title: string
+  status: ServiceCaseStatus
+  created_at: string
+  updated_at: string
+  completed_at: string | null
+  closed_at: string | null
+}
+
+export type CreateServiceCaseResponse = {
+  created: boolean
+  service_case: ServiceCase
+}
+
 export type UserSubmissionSummary = {
   id: string
   status: SubmissionStatus
@@ -171,6 +200,7 @@ export type UserSubmissionSummary = {
   intelligence_run_id: string | null
   created_at: string
   completed_at: string | null
+  linked_service_case: LinkedServiceCase | null
 }
 
 export type UserSubmissionListResponse = {
@@ -215,6 +245,7 @@ export type UserSubmissionDetail = {
   enterprise?: CurrentIdentityEnterprise
   content: SubmissionContentSummary | null
   intelligence: SubmissionIntelligenceSummary | null
+  linked_service_case: LinkedServiceCase | null
 }
 
 export type DiscoveryStatus = 'active' | 'withdrawn'

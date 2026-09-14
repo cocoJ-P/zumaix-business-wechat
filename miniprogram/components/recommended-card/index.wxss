@@ -14,8 +14,12 @@
 }
 
 .reco-card-compact .reco-title {
-  margin-top: 0;
+  margin-top: 8rpx;
   font-weight: var(--font-medium);
+}
+
+.reco-card-compact .reco-hint {
+  margin-top: 4rpx;
 }
 
 .reco-card-shelf {
@@ -42,16 +46,31 @@
 .reco-status-pending,
 .reco-status-ingesting,
 .reco-status-analyzing,
-.reco-status-checking {
+.reco-status-checking,
+.reco-status-awaiting_service,
+.reco-status-in_progress {
   color: var(--brand-primary);
 }
 
-.reco-status-succeeded {
+.reco-status-succeeded,
+.reco-status-completed {
   color: var(--text-secondary);
+}
+
+.reco-status-closed {
+  color: var(--text-tertiary);
 }
 
 .reco-status-failed {
   color: #8a5a52;
+}
+
+.reco-hint {
+  display: block;
+  margin-top: 6rpx;
+  font-size: var(--font-sm);
+  color: var(--text-tertiary);
+  line-height: 1.4;
 }
 
 .reco-sep {

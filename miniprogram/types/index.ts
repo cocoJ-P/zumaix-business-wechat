@@ -85,11 +85,37 @@ export interface DiscoveryItem {
   visualState?: 'fresh' | 'deprioritized'
 }
 
+export type RecommendedSubmissionStatus =
+  | 'pending'
+  | 'ingesting'
+  | 'analyzing'
+  | 'succeeded'
+  | 'failed'
+  | 'checking'
+
+export type RecommendedDisplayStatus =
+  | 'pending'
+  | 'ingesting'
+  | 'analyzing'
+  | 'failed'
+  | 'succeeded'
+  | 'awaiting_service'
+  | 'in_progress'
+  | 'completed'
+  | 'closed'
+  | 'checking'
+
+export type RecommendedServiceCaseStatus = 'open' | 'in_progress' | 'completed' | 'closed'
+
 export type RecommendedItem = {
   id: string
   title: string
-  status: 'pending' | 'ingesting' | 'analyzing' | 'succeeded' | 'failed' | 'checking'
+  status: RecommendedSubmissionStatus
+  displayStatus: RecommendedDisplayStatus
   statusText: string
+  statusHint: string
+  serviceCaseStatus: RecommendedServiceCaseStatus | null
+  canContinueToService: boolean
   preview: string
   originText: string
   timeText: string
