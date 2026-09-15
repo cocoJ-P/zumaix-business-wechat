@@ -6,6 +6,6 @@
     data-id="{{item.id}}"
     bindtap="onItemTap"
   >
-    <recommended-card item="{{item}}" layout="list" compact="{{compact}}" />
+    <recommended-card item="{{item}}" layout="list" compact="{{compact}}" inverse="{{inverse}}" />
   </view>
 </view>

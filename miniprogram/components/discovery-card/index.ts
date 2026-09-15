@@ -1,6 +1,7 @@
 import type { DiscoveryItem } from '../../types/index'
 
 const AXIS_LOCK = 9
+const TAP_SLOP = 24
 const COMMIT_THRESHOLD = 200
 const MAX_VISUAL_X = 20
 const DAMPING = 70
@@ -8,6 +9,7 @@ const COMPACT_MAX = 132
 const COMPACT_THRESHOLD = 72
 const SETTLE_MS = 200
 const COMMIT_MS = 220
+const FLIP_HALF_MS = 220
 
 Component({
   properties: {
@@ -33,14 +35,17 @@ Component({
     displayTitle: '',
     flipped: false,
     flipping: false,
+    turning: false,
     deciding: false,
     settling: false,
     committing: false,
     moverStyle: '',
+    bgFailed: false,
+    showPhoto: false,
   },
   lifetimes: {
     attached() {
-      this.syncTint(this.properties.item)
+      this.syncTint(this.properties.item, false)
       this.resetMotion(true)
     },
     detached() {
@@ -50,22 +55,38 @@ Component({
   },
   observers: {
     item(value: unknown) {
-      this.syncTint(value)
       this.clearFlipTimer()
       this.clearMotionTimer()
       this._committing = false
       this.setData({
         flipped: false,
         flipping: false,
+        turning: false,
       })
+      this.syncTint(value, false)
       this.resetMotion(true)
     },
   },
   methods: {
-    syncTint(value: unknown) {
+    syncTint(value: unknown, bgFailed?: boolean) {
       const item = value as DiscoveryItem
+      const failed = typeof bgFailed === 'boolean' ? bgFailed : this.data.bgFailed
+      const canShowPhoto = !!(
+        item &&
+        item.backgroundImage &&
+        item.visualState !== 'deprioritized' &&
+        !failed
+      )
       this.setData({
         displayTitle: (item && item.title ? item.title : '').replace(/\n/g, ''),
+        bgFailed: failed,
+        showPhoto: canShowPhoto,
+      })
+    },
+    onBgError() {
+      this.setData({
+        bgFailed: true,
+        showPhoto: false,
       })
     },
     isLarge() {
@@ -130,9 +151,19 @@ Component({
       this._startX = touch.clientX
       this._startY = touch.clientY
       this._swiped = false
+      this._tapConsumed = false
       this._axis = ''
       this._rawDx = 0
       this._didHaptic = false
+      if (this.isLarge()) {
+        this.triggerEvent('gesturechange', {
+          active: true,
+          direction: '',
+          rawDx: 0,
+          progress: 0,
+          armed: false,
+        })
+      }
     },
     onMove(event: { touches: Array<{ clientX: number; clientY: number }> }) {
       if (this.data.flipping || this._committing || this.properties.locked) {
@@ -181,10 +212,25 @@ Component({
       if (this._committing || this.data.flipping || this.properties.locked) {
         return
       }
-      if (this._axis !== 'x') {
+      const rawDx = this._rawDx || 0
+      if (this._axis !== 'x' || Math.abs(rawDx) < TAP_SLOP) {
+        const shouldFlip = this.isLarge() && this._axis !== 'y'
+        this._swiped = false
+        this._axis = ''
+        if (this.isLarge()) {
+          this.triggerEvent('gesturechange', { active: false })
+        } else {
+          this.setData({
+            tx: 0,
+            moverStyle: this.motionStyle(0, 0, 1, 1),
+          })
+        }
+        if (shouldFlip) {
+          this._tapConsumed = true
+          this.flipTo(!this.data.flipped)
+        }
         return
       }
-      const rawDx = this._rawDx || 0
       if (this.isLarge()) {
         if (rawDx >= COMMIT_THRESHOLD) {
           this.commit('save')
@@ -271,18 +317,31 @@ Component({
         })
       }, 280)
     },
-    flipTo(flipped: boolean) {
+    flipTo(next: boolean) {
+      if (this.data.flipping || this.data.flipped === next) {
+        return
+      }
       this.clearFlipTimer()
       this.resetMotion(true)
       this.setData({
-        flipped,
         flipping: true,
+        turning: true,
       })
       this._flipTimer = setTimeout(() => {
-        this.setData({ flipping: false })
-      }, 450)
+        this.setData({ flipped: next })
+        this._flipTimer = setTimeout(() => {
+          this.setData({ turning: false })
+          this._flipTimer = setTimeout(() => {
+            this.setData({ flipping: false })
+          }, FLIP_HALF_MS)
+        }, 16)
+      }, FLIP_HALF_MS)
     },
     onTap() {
+      if (this._tapConsumed) {
+        this._tapConsumed = false
+        return
+      }
       if (this._swiped || this.data.flipping || this._committing || this.properties.locked) {
         return
       }
@@ -290,7 +349,7 @@ Component({
         this.emitOpen()
         return
       }
-      this.flipTo(true)
+      this.flipTo(!this.data.flipped)
     },
     onFlipBack() {
       if (this._swiped || this.data.flipping || this._committing || this.properties.locked) {

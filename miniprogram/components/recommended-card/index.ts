@@ -14,6 +14,10 @@ Component({
       type: Boolean,
       value: false,
     },
+    inverse: {
+      type: Boolean,
+      value: false,
+    },
   },
   data: {
     card: {} as RecommendedItem,

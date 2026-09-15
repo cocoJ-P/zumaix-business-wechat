@@ -2,20 +2,25 @@
 
 <scroll-view
   class="page-scroll"
-  scroll-y
+  scroll-y="{{!gesture.active}}"
   scroll-x="{{false}}"
   show-scrollbar="{{false}}"
   enhanced
   bounces="{{true}}"
   refresher-enabled="{{true}}"
   refresher-triggered="{{homeRefreshing}}"
+  refresher-background="#015DDE"
   bindrefresherrefresh="onHomeRefresh"
 >
-<view class="page" style="padding-top: {{paddingTopPx}}px;">
-  <view class="brand">
-    <text class="brand-name">筑脉查查</text>
-    <text class="brand-tagline">看到机会，先查查。</text>
+  <view class="hero-band" style="padding-top: {{paddingTopPx}}px;">
+    <image
+      class="herotitle-image"
+      src="/images/brand/herotitle.png"
+      mode="widthFix"
+      show-menu-by-longpress="{{false}}"
+    />
   </view>
+<view class="page">
 
   <view class="check-entry">
     <input
@@ -24,18 +29,30 @@
       maxlength="8000"
       confirm-type="search"
       hold-keyboard
-      placeholder="粘贴链接或内容"
+      placeholder="有需求？先查查"
       placeholder-class="check-placeholder"
       bindinput="onComposeInput"
       bindconfirm="onComposeCheck"
     />
-    <text class="check-action" catchtap="onPasteClipboard">粘贴</text>
     <text class="check-cta" catchtap="onComposeCheck">查查</text>
   </view>
 
+  <view class="quick-entries">
+    <view
+      class="quick-entry"
+      wx:for="{{quickEntries}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      bindtap="onQuickEntryTap"
+    >
+      <text class="quick-label">{{item.label}}</text>
+    </view>
+  </view>
+
+  <view class="content-band">
   <view class="section reco-section">
     <view class="section-head">
-      <text class="section-title">为您推荐</text>
+      <text class="section-title">待处理</text>
       <text class="section-action" bindtap="onOpenAllRecommended">显示全部</text>
     </view>
 
@@ -57,7 +74,7 @@
       </view>
     </block>
     <block wx:else>
-      <recommended-list items="{{recommendedItems}}" compact="{{true}}" bind:itemtap="onOpenRecommended" />
+      <recommended-list items="{{recommendedItems}}" compact="{{true}}" inverse="{{true}}" bind:itemtap="onOpenRecommended" />
     </block>
   </view>
 
@@ -93,8 +110,19 @@
             bind:open="onOpenDiscovery"
           />
         </view>
-        <view wx:if="{{next}}" class="peek">
+          <view wx:if="{{next}}" class="peek">
           <view class="peek-card visual-{{next.visualState === 'deprioritized' ? 'plain' : 'fresh'}}">
+            <image
+              wx:if="{{next.backgroundImage && next.visualState !== 'deprioritized' && !peekBgFailed}}"
+              class="peek-bg"
+              src="{{next.backgroundImage}}"
+              mode="aspectFill"
+              binderror="onPeekBgError"
+            />
+            <view
+              wx:if="{{next.backgroundImage && next.visualState !== 'deprioritized' && !peekBgFailed}}"
+              class="peek-veil"
+            ></view>
             <view wx:if="{{next.kind || next.eventStatus}}" class="peek-event">
               <text wx:if="{{next.kind}}" class="peek-kind">{{next.kind}}</text>
               <text wx:if="{{next.kind && next.eventStatus}}" class="peek-sep">·</text>
@@ -105,6 +133,7 @@
         </view>
       </view>
     </block>
+  </view>
   </view>
 </view>
 </scroll-view>

@@ -1,7 +1,7 @@
 {
   "navigationBarTitleText": "全部内容",
-  "navigationBarBackgroundColor": "#F4F1EB",
-  "navigationBarTextStyle": "black",
+  "navigationBarBackgroundColor": "#015DDE",
+  "navigationBarTextStyle": "white",
   "backgroundColor": "#F4F1EB",
   "enablePullDownRefresh": true,
   "backgroundTextStyle": "dark",

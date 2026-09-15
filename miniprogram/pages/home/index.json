@@ -1,9 +1,11 @@
 {
   "navigationStyle": "custom",
+  "navigationBarTextStyle": "white",
   "disableSwipeBack": true,
   "enablePullDownRefresh": true,
-  "backgroundColor": "#F4F1EB",
-  "backgroundTextStyle": "dark",
+  "backgroundColor": "#4F739F",
+  "backgroundColorTop": "#015DDE",
+  "backgroundTextStyle": "light",
   "usingComponents": {
     "discovery-card": "/components/discovery-card/index",
     "recommended-list": "/components/recommended-list/index",

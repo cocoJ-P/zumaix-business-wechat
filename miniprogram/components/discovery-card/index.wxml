@@ -2,32 +2,41 @@
   <view
     class="mover mover-{{size}} {{deciding ? 'is-deciding' : ''}} {{settling ? 'is-settling' : ''}} {{committing ? 'is-committing' : ''}}"
     style="{{moverStyle}}"
-    bindtouchstart="onStart"
+    catchtouchstart="onStart"
     catchtouchmove="onMove"
     bindtouchend="onEnd"
     bindtouchcancel="onEnd"
   >
     <view class="stage">
-      <view class="flip {{flipped ? 'is-flipped' : ''}}">
+      <view class="flip {{turning ? 'is-turning' : ''}}">
         <view
-          class="face face-front card card-{{size}} visual-{{item.visualState === 'deprioritized' ? 'plain' : 'fresh'}}"
-          bindtap="onTap"
+          wx:if="{{!flipped}}"
+          class="face face-front card card-{{size}} visual-{{item.visualState === 'deprioritized' ? 'plain' : 'fresh'}} {{showPhoto ? 'has-photo' : ''}}"
+          catchtap="onTap"
         >
-          <block wx:if="{{item.visualState !== 'deprioritized'}}">
+          <image
+            wx:if="{{showPhoto}}"
+            class="card-bg"
+            src="{{item.backgroundImage}}"
+            mode="aspectFill"
+            binderror="onBgError"
+          />
+          <block wx:if="{{item.visualState !== 'deprioritized' && !showPhoto}}">
             <view class="aurora aurora-a"></view>
             <view class="aurora aurora-b"></view>
             <view class="aurora aurora-c"></view>
-            <view class="aurora-veil"></view>
           </block>
-          <view class="face-content">
+          <view class="face-content" style="background: none; background-color: transparent;">
             <block wx:if="{{size === 'large'}}">
-              <view wx:if="{{item.kind || item.eventStatus}}" class="event">
-                <text wx:if="{{item.kind}}" class="kind">{{item.kind}}</text>
-                <text wx:if="{{item.kind && item.eventStatus}}" class="sep">·</text>
-                <text wx:if="{{item.eventStatus}}" class="status">{{item.eventStatus}}</text>
+              <view class="face-body">
+                <view wx:if="{{item.kind || item.eventStatus}}" class="event">
+                  <text wx:if="{{item.kind}}" class="kind">{{item.kind}}</text>
+                  <text wx:if="{{item.kind && item.eventStatus}}" class="sep">·</text>
+                  <text wx:if="{{item.eventStatus}}" class="status">{{item.eventStatus}}</text>
+                </view>
+                <text class="title">{{item.title}}</text>
+                <text wx:if="{{item.reason}}" class="reason">{{item.reason}}</text>
               </view>
-              <text class="title">{{item.title}}</text>
-              <text wx:if="{{item.reason}}" class="reason">{{item.reason}}</text>
               <text class="action">查看判断 →</text>
             </block>
             <block wx:else>
@@ -43,18 +52,25 @@
           </view>
         </view>
 
-        <view wx:if="{{size === 'large' && (flipped || flipping)}}" class="face-back-layer">
-          <view
-            class="face face-back card card-large visual-{{item.visualState === 'deprioritized' ? 'plain' : 'fresh'}}"
-            bindtap="onFlipBack"
-          >
-            <block wx:if="{{item.visualState !== 'deprioritized'}}">
-              <view class="aurora aurora-a"></view>
-              <view class="aurora aurora-b"></view>
-              <view class="aurora aurora-c"></view>
-              <view class="aurora-veil"></view>
-            </block>
-            <view class="face-content">
+        <view
+          wx:else
+          class="face face-back card card-large visual-{{item.visualState === 'deprioritized' ? 'plain' : 'fresh'}} {{showPhoto ? 'has-photo' : ''}}"
+          catchtap="onFlipBack"
+        >
+          <image
+            wx:if="{{showPhoto}}"
+            class="card-bg"
+            src="{{item.backgroundImage}}"
+            mode="aspectFill"
+            binderror="onBgError"
+          />
+          <block wx:if="{{item.visualState !== 'deprioritized' && !showPhoto}}">
+            <view class="aurora aurora-a"></view>
+            <view class="aurora aurora-b"></view>
+            <view class="aurora aurora-c"></view>
+          </block>
+          <view class="face-content" style="background: none; background-color: transparent;">
+            <view class="face-body">
               <view wx:if="{{item.kind || item.eventStatus}}" class="event">
                 <text wx:if="{{item.kind}}" class="kind">{{item.kind}}</text>
                 <text wx:if="{{item.kind && item.eventStatus}}" class="sep">·</text>
@@ -75,9 +91,9 @@
                 <text class="fact-value">{{item.deadlineText}}</text>
               </view>
               <text wx:if="{{item.hasReferenceSource}}" class="note">有参考来源</text>
-              <view class="back-actions">
-                <text class="back-link" catchtap="onFlipBack">返回正面</text>
-              </view>
+            </view>
+            <view class="back-actions">
+              <text class="back-link" catchtap="onFlipBack">返回正面</text>
             </view>
           </view>
         </view>

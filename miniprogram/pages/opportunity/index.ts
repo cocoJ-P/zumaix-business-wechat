@@ -1,62 +1,49 @@
 import { HOME_VIEW_STATE } from '../../mock/homeState'
-import {
-  filterOpportunities,
-  mockOpportunities,
-  OPPORTUNITY_FILTERS,
-  type OpportunityFilter,
-} from '../../mock/opportunities'
+import { mockOpportunities } from '../../mock/opportunities'
+import { PARK_SERVICES, VENDOR_SERVICES, type ServiceItem } from '../../mock/services'
 import type { HomeViewState, Opportunity } from '../../types/index'
 import { openOpportunityDetail } from '../../utils/checkSession'
 
-type OpportunityPageData = {
-  viewState: HomeViewState
-  filters: OpportunityFilter[]
-  activeFilter: OpportunityFilter
-  opportunities: Opportunity[]
-}
+type HubTab = 'park' | 'vendor' | 'policy'
 
-function listForFilter(filter: OpportunityFilter): Opportunity[] {
-  if (HOME_VIEW_STATE !== 'success') {
-    return []
-  }
-  return filterOpportunities(mockOpportunities, filter)
+type OpportunityHubData = {
+  tabs: Array<{ id: HubTab; label: string }>
+  activeTab: HubTab
+  parkServices: ServiceItem[]
+  vendorServices: ServiceItem[]
+  viewState: HomeViewState
+  opportunities: Opportunity[]
 }
 
 Page({
   data: {
+    tabs: [
+      { id: 'park', label: '园区服务' },
+      { id: 'vendor', label: '服务商' },
+      { id: 'policy', label: '政策' },
+    ],
+    activeTab: 'park',
+    parkServices: PARK_SERVICES,
+    vendorServices: VENDOR_SERVICES,
     viewState: HOME_VIEW_STATE,
-    filters: [...OPPORTUNITY_FILTERS],
-    activeFilter: '全部',
-    opportunities: [],
-  } as OpportunityPageData,
+    opportunities: HOME_VIEW_STATE === 'success' ? mockOpportunities : [],
+  } as OpportunityHubData,
 
-  onLoad() {
-    this.hydrate()
-  },
-
-  hydrate() {
-    const viewState = HOME_VIEW_STATE
-    const activeFilter = this.data.activeFilter || '全部'
-    this.setData({
-      viewState,
-      activeFilter,
-      opportunities: viewState === 'success' ? listForFilter(activeFilter) : [],
-    })
-  },
-
-  onRetry() {
-    this.hydrate()
-  },
-
-  onFilterTap(event: { currentTarget: { dataset: { filter?: string } } }) {
-    const next = event.currentTarget.dataset.filter
-    if (!next || next === this.data.activeFilter) {
+  onTabTap(event: { currentTarget: { dataset: { id?: HubTab } } }) {
+    const id = event.currentTarget.dataset.id
+    if (!id || id === this.data.activeTab) {
       return
     }
-    const activeFilter = next as OpportunityFilter
-    this.setData({
-      activeFilter,
-      opportunities: listForFilter(activeFilter),
+    this.setData({ activeTab: id })
+  },
+
+  onServiceTap(event: { currentTarget: { dataset: { id?: string } } }) {
+    const id = event.currentTarget.dataset.id
+    if (!id) {
+      return
+    }
+    wx.navigateTo({
+      url: `/pages/service/index?id=${encodeURIComponent(id)}`,
     })
   },
 
@@ -66,5 +53,12 @@ Page({
       return
     }
     openOpportunityDetail(id)
+  },
+
+  onRetry() {
+    this.setData({
+      viewState: HOME_VIEW_STATE,
+      opportunities: HOME_VIEW_STATE === 'success' ? mockOpportunities : [],
+    })
   },
 })

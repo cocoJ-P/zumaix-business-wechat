@@ -83,6 +83,7 @@ export interface DiscoveryItem {
   hasReferenceSource?: boolean
   seenAt?: string | null
   visualState?: 'fresh' | 'deprioritized'
+  backgroundImage?: string
 }
 
 export type RecommendedSubmissionStatus =

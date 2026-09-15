@@ -1,7 +1,7 @@
 {
   "navigationBarTitleText": "待处理",
-  "navigationBarBackgroundColor": "#F4F1EB",
-  "navigationBarTextStyle": "black",
+  "navigationBarBackgroundColor": "#015DDE",
+  "navigationBarTextStyle": "white",
   "backgroundColor": "#F4F1EB",
   "usingComponents": {
     "empty-state": "/components/empty-state/index",

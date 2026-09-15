@@ -10,6 +10,10 @@ Component({
       type: Boolean,
       value: false,
     },
+    inverse: {
+      type: Boolean,
+      value: false,
+    },
   },
   methods: {
     onItemTap(event: { currentTarget: { dataset: { id?: string } } }) {

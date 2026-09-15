@@ -1,0 +1,28 @@
+<view class="page">
+  <block wx:if="{{ready && !service}}">
+    <view class="missing">
+      <text class="missing-title">没有找到这项服务</text>
+      <text class="missing-desc">可能是演示数据尚未准备，或入口已更新。</text>
+    </view>
+  </block>
+
+  <block wx:elif="{{service}}">
+    <view class="hero">
+      <text class="kicker">{{service.source === 'park' ? '园区服务 · ' : '合作服务商 · '}}{{service.provider}}</text>
+      <text class="hero-title">{{service.title}}</text>
+      <text class="hero-summary">{{service.summary}}</text>
+    </view>
+
+    <view class="block">
+      <text class="block-title">可以协助的事项</text>
+      <view class="offer" wx:for="{{service.offers}}" wx:key="*this">
+        <text class="offer-mark">·</text>
+        <text class="offer-text">{{item}}</text>
+      </view>
+    </view>
+
+    <view class="note">{{service.note}}</view>
+
+    <view class="cta" bindtap="onConsult">了解这项服务</view>
+  </block>
+</view>

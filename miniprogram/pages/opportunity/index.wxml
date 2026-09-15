@@ -1,42 +1,68 @@
 <view class="page">
-  <block wx:if="{{viewState === 'loading'}}">
-    <loading-state text="正在加载" />
+  <view class="tabs">
+    <view
+      class="tab {{item.id === activeTab ? 'is-active' : ''}}"
+      wx:for="{{tabs}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      bindtap="onTabTap"
+    >
+      <text class="tab-label">{{item.label}}</text>
+      <view wx:if="{{item.id === activeTab}}" class="tab-line"></view>
+    </view>
+  </view>
+
+  <block wx:if="{{activeTab === 'park'}}">
+    <view class="intro">
+      <text class="intro-desc">园区直接提供的空间、设施和运营支持。这一版先展示目录。</text>
+    </view>
+    <view class="grid">
+      <view
+        class="tile"
+        wx:for="{{parkServices}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        bindtap="onServiceTap"
+      >
+        <text class="tile-title">{{item.title}}</text>
+        <text class="tile-brief">{{item.brief}}</text>
+      </view>
+    </view>
   </block>
 
-  <block wx:elif="{{viewState === 'error'}}">
-    <empty-state title="暂时无法加载" description="请稍后重试" />
-    <view class="retry">
-      <secondary-button text="重新加载" bind:tap="onRetry" />
+  <block wx:elif="{{activeTab === 'vendor'}}">
+    <view class="intro">
+      <text class="intro-desc">合作服务商提供的法律、财税、知识产权等专业能力。这一版为静态展示。</text>
+    </view>
+    <view class="grid">
+      <view
+        class="tile"
+        wx:for="{{vendorServices}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        bindtap="onServiceTap"
+      >
+        <text class="tile-title">{{item.title}}</text>
+        <text class="tile-brief">{{item.brief}}</text>
+      </view>
     </view>
   </block>
 
   <block wx:else>
-    <scroll-view class="filters" scroll-x show-scrollbar="{{false}}">
-      <view class="filters-row">
-        <view
-          class="capsule {{item === activeFilter ? 'capsule-active' : ''}}"
-          wx:for="{{filters}}"
-          wx:key="*this"
-          data-filter="{{item}}"
-          bindtap="onFilterTap"
-        >
-          {{item}}
-        </view>
-      </view>
-    </scroll-view>
-
-    <block wx:if="{{opportunities.length}}">
-      <view class="stack-item" wx:for="{{opportunities}}" wx:key="id">
-        <opportunity-card
-          opportunity="{{item}}"
-          bind:tap="onOpportunityTap"
-        />
+    <block wx:if="{{viewState === 'loading'}}">
+      <loading-state text="正在加载" />
+    </block>
+    <block wx:elif="{{viewState === 'error'}}">
+      <empty-state title="暂时无法加载" description="请稍后重试" />
+      <view class="retry">
+        <secondary-button text="重新加载" bind:tap="onRetry" />
       </view>
     </block>
-    <empty-state
-      wx:else
-      title="{{activeFilter === '全部' ? '暂无机会' : '暂无此类机会'}}"
-      description="{{activeFilter === '全部' ? '有新机会时会显示在这里' : '可点「全部」查看其他类型'}}"
-    />
+    <block wx:elif="{{opportunities.length}}">
+      <view class="stack-item" wx:for="{{opportunities}}" wx:key="id">
+        <opportunity-card opportunity="{{item}}" bind:tap="onOpportunityTap" />
+      </view>
+    </block>
+    <empty-state wx:else title="暂无政策机会" description="有新的政策或申报窗口时，会出现在这里。" />
   </block>
 </view>

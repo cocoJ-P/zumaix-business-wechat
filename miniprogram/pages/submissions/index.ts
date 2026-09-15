@@ -5,6 +5,7 @@ import { openSubmissionCheck } from '../../utils/checkSession'
 import {
   getRecommendedListErrorMessage,
   mapMySubmissionsToRecommendedViewModels,
+  sortRecommendedPendingFirst,
 } from '../../utils/submissionView'
 
 type SubmissionsData = {
@@ -49,7 +50,7 @@ Page({
         loading: false,
         error: false,
         errorMessage: '',
-        items: mapMySubmissionsToRecommendedViewModels(response.items),
+        items: sortRecommendedPendingFirst(mapMySubmissionsToRecommendedViewModels(response.items)),
       })
     } catch (error) {
       const apiError = toApiError(error)

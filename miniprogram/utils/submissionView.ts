@@ -360,6 +360,19 @@ export function filterSucceededRecommendedItems(
   return items.filter((item) => item.status === 'succeeded' && item.id.indexOf('temp-') !== 0)
 }
 
+export function sortRecommendedPendingFirst(items: RecommendedItem[]): RecommendedItem[] {
+  const pending: RecommendedItem[] = []
+  const done: RecommendedItem[] = []
+  items.forEach((item) => {
+    if (item.isTerminal) {
+      done.push(item)
+    } else {
+      pending.push(item)
+    }
+  })
+  return [...pending, ...done]
+}
+
 export function createTempRecommendedFromDiscovery(item: DiscoveryItem): RecommendedItem {
   return buildRecommendedItem({
     id: `temp-${item.id}`,

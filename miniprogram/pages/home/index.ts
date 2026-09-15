@@ -14,6 +14,7 @@ import {
   patchRecommendedItem,
   prependRecommendedItem,
   replaceRecommendedItem,
+  sortRecommendedPendingFirst,
 } from '../../utils/submissionView'
 
 type GestureState = {
@@ -34,6 +35,11 @@ const IDLE_GESTURE: GestureState = {
   committed: false,
 }
 
+type QuickEntry = {
+  id: 'calendar' | 'hot' | 'dhub' | 'report'
+  label: string
+}
+
 type HomeData = {
   paddingTopPx: number
   recommendedItems: RecommendedItem[]
@@ -46,23 +52,25 @@ type HomeData = {
   discoveryCount: number
   current: DiscoveryItem | null
   next: DiscoveryItem | null
+  peekBgFailed: boolean
   homeRefreshing: boolean
   gesture: GestureState
   deckEntering: boolean
   feedbackLocked: boolean
   composeText: string
+  quickEntries: QuickEntry[]
 }
 
 function getHomePaddingTopPx(): number {
   const menu = wx.getMenuButtonBoundingClientRect()
   if (menu && menu.bottom > 0) {
-    return menu.bottom + 8
+    return Math.max(menu.top, menu.bottom - 20)
   }
-  return 56
+  return 36
 }
 
 function visibleHomeRecommended(items: RecommendedItem[]): RecommendedItem[] {
-  return filterSucceededRecommendedItems(items).slice(0, 2)
+  return sortRecommendedPendingFirst(filterSucceededRecommendedItems(items)).slice(0, 2)
 }
 
 function cloneCard(card: DiscoveryItem): DiscoveryItem {
@@ -90,7 +98,7 @@ Page({
   _gestureTimer: 0,
 
   data: {
-    paddingTopPx: 56,
+    paddingTopPx: 36,
     recommendedItems: [],
     recommendedLoading: false,
     recommendedError: false,
@@ -101,11 +109,18 @@ Page({
     discoveryCount: 0,
     current: null,
     next: null,
+    peekBgFailed: false,
     homeRefreshing: false,
     gesture: { ...IDLE_GESTURE },
     deckEntering: false,
     feedbackLocked: false,
     composeText: '',
+    quickEntries: [
+      { id: 'calendar', label: '日历' },
+      { id: 'hot', label: '热点' },
+      { id: 'dhub', label: 'D-Hub' },
+      { id: 'report', label: '月报' },
+    ],
   } as HomeData,
 
   onLoad() {
@@ -266,6 +281,7 @@ Page({
     this.setData({
       current,
       next,
+      peekBgFailed: false,
       discoveryCount: discoveryDeck.length,
       deckEntering: entering,
       feedbackLocked: !!(current && pendingFeedbackIds.has(current.id)),
@@ -291,7 +307,7 @@ Page({
       }
     }
     return {
-      title: '筑脉查查 · 看到机会，先查查。',
+      title: '北辰云空间 · 查查 · 看到机会，先查查。',
       path: '/pages/home/index',
     }
   },
@@ -300,24 +316,16 @@ Page({
     wx.navigateTo({ url: '/pages/submissions/index' })
   },
 
-  onComposeInput(event: { detail: { value: string } }) {
-    this.setData({ composeText: event.detail.value })
+  onQuickEntryTap() {
+    wx.showToast({ title: '即将开放', icon: 'none' })
   },
 
-  onPasteClipboard() {
-    wx.getClipboardData({
-      success: (res) => {
-        const next = (res.data || '').trim()
-        if (!next) {
-          wx.showToast({ title: '剪贴板为空', icon: 'none' })
-          return
-        }
-        this.setData({ composeText: next })
-      },
-      fail: () => {
-        wx.showToast({ title: '无法读取剪贴板，请手动粘贴', icon: 'none' })
-      },
-    })
+  onPeekBgError() {
+    this.setData({ peekBgFailed: true })
+  },
+
+  onComposeInput(event: { detail: { value: string } }) {
+    this.setData({ composeText: event.detail.value })
   },
 
   onComposeCheck() {
@@ -364,7 +372,7 @@ Page({
     this.setData({
       gesture: {
         active: true,
-        direction: detail.direction || this.data.gesture.direction,
+        direction: typeof detail.direction === 'string' ? detail.direction : this.data.gesture.direction,
         rawDx: typeof detail.rawDx === 'number' ? detail.rawDx : this.data.gesture.rawDx,
         progress: typeof detail.progress === 'number' ? detail.progress : this.data.gesture.progress,
         armed: !!detail.armed,

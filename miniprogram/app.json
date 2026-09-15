@@ -6,20 +6,22 @@
     "pages/check/index",
     "pages/submissions/index",
     "pages/opportunity-detail/index",
+    "pages/opportunity-list/index",
+    "pages/service/index",
     "pages/inbox/index",
     "pages/judgment/index"
   ],
   "window": {
     "backgroundColor": "#F4F1EB",
     "backgroundTextStyle": "dark",
-    "navigationBarBackgroundColor": "#F4F1EB",
-    "navigationBarTitleText": "筑脉查查",
-    "navigationBarTextStyle": "black"
+    "navigationBarBackgroundColor": "#015DDE",
+    "navigationBarTitleText": "北辰云空间 · 查查",
+    "navigationBarTextStyle": "white"
   },
   "tabBar": {
-    "color": "#9A9994",
-    "selectedColor": "#1F6B5C",
-    "backgroundColor": "#FFFFFF",
+    "color": "#9199A2",
+    "selectedColor": "#0B66E4",
+    "backgroundColor": "#F7F8FA",
     "borderStyle": "white",
     "list": [
       {

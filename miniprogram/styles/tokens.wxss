@@ -2,6 +2,7 @@ page {
   --bg-primary: #f4f1eb;
   --bg-secondary: #ffffff;
   --bg-tertiary: #efeeea;
+  --brand-hero: #015dde;
 
   --text-primary: #1c1c1a;
   --text-secondary: #6b6a66;

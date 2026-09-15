@@ -7,6 +7,7 @@ import type {
   DiscoveryStatus,
 } from '../api/types'
 import type { DiscoveryItem } from '../types/index'
+import { resolveDiscoveryBackground } from './discoveryBackground'
 
 const OPPORTUNITY_TYPE_LABEL: Record<DiscoveryOpportunityType, DiscoveryItem['kind']> = {
   policy: '政策',
@@ -148,9 +149,10 @@ export function mapDiscoveryToCardViewModel(
   const summary = textValue(item.summary)
   const frontReason = reason || (summary ? truncateText(summary, FRONT_REASON_MAX) : '')
   const state = item.current_user_state
+  const kind = mapKindLabel(item.opportunity_type, item.reference_type)
   return {
     id: item.id,
-    kind: mapKindLabel(item.opportunity_type, item.reference_type),
+    kind,
     eventStatus: formatDiscoveryDeadline(item.deadline),
     title: item.title,
     reason: frontReason,
@@ -163,6 +165,10 @@ export function mapDiscoveryToCardViewModel(
     hasReferenceSource: !!textValue(item.reference_url),
     seenAt: state && state.seen_at ? state.seen_at : null,
     visualState: visualStateFromUserState(state),
+    backgroundImage: resolveDiscoveryBackground({
+      opportunityType: item.opportunity_type,
+      kind,
+    }),
   }
 }
 

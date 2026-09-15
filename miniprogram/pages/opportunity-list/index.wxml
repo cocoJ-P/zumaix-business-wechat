@@ -1,0 +1,42 @@
+<view class="page">
+  <block wx:if="{{viewState === 'loading'}}">
+    <loading-state text="正在加载" />
+  </block>
+
+  <block wx:elif="{{viewState === 'error'}}">
+    <empty-state title="暂时无法加载" description="请稍后重试" />
+    <view class="retry">
+      <secondary-button text="重新加载" bind:tap="onRetry" />
+    </view>
+  </block>
+
+  <block wx:else>
+    <scroll-view class="filters" scroll-x show-scrollbar="{{false}}">
+      <view class="filters-row">
+        <view
+          class="capsule {{item === activeFilter ? 'capsule-active' : ''}}"
+          wx:for="{{filters}}"
+          wx:key="*this"
+          data-filter="{{item}}"
+          bindtap="onFilterTap"
+        >
+          {{item}}
+        </view>
+      </view>
+    </scroll-view>
+
+    <block wx:if="{{opportunities.length}}">
+      <view class="stack-item" wx:for="{{opportunities}}" wx:key="id">
+        <opportunity-card
+          opportunity="{{item}}"
+          bind:tap="onOpportunityTap"
+        />
+      </view>
+    </block>
+    <empty-state
+      wx:else
+      title="{{activeFilter === '全部' ? '暂无机会' : '暂无此类机会'}}"
+      description="{{activeFilter === '全部' ? '有新机会时会显示在这里' : '可点「全部」查看其他类型'}}"
+    />
+  </block>
+</view>

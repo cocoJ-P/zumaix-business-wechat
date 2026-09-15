@@ -12,6 +12,14 @@
   height: auto;
 }
 
+.swipe-large,
+.swipe-large .mover,
+.swipe-large .stage,
+.swipe-large .flip {
+  width: 100%;
+  height: 480rpx;
+}
+
 .mover {
   position: relative;
   z-index: 1;
@@ -20,6 +28,7 @@
 }
 
 .mover-large {
+  overflow: visible;
   box-shadow: var(--shadow-lift);
   border-radius: var(--radius-xl);
   transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1),
@@ -47,67 +56,27 @@
 .stage {
   perspective: 1400px;
   -webkit-perspective: 1400px;
-  transform-style: preserve-3d;
-  -webkit-transform-style: preserve-3d;
+  overflow: visible;
 }
 
 .flip {
   position: relative;
-  transform-style: preserve-3d;
-  -webkit-transform-style: preserve-3d;
-  transition: transform 0.45s ease;
-  -webkit-transition: -webkit-transform 0.45s ease;
-}
-
-.is-flipped {
-  transform: rotateY(180deg);
-  -webkit-transform: rotateY(180deg);
-}
-
-.face {
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
-}
-
-.face-front {
-  position: relative;
-  z-index: 1;
+  overflow: visible;
   transform: rotateY(0deg);
   -webkit-transform: rotateY(0deg);
+  transition: transform 0.22s ease-in;
+  -webkit-transition: -webkit-transform 0.22s ease-in;
 }
 
-.face-back-layer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 0;
+.flip.is-turning {
+  transform: rotateY(90deg);
+  -webkit-transform: rotateY(90deg);
 }
 
+.face-front,
 .face-back {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  transform: rotateY(180deg);
-  -webkit-transform: rotateY(180deg);
-}
-
-.face-back.card-large {
-  height: 100%;
-  min-height: 0;
-}
-
-.is-flipped .face-front {
-  pointer-events: none;
-}
-
-.is-flipped .face-back-layer {
-  pointer-events: auto;
-  z-index: 2;
+  position: relative;
+  z-index: 1;
 }
 
 .card {
@@ -121,8 +90,11 @@
 .card-large {
   display: flex;
   flex-direction: column;
-  height: auto;
+  width: 100%;
+  height: 480rpx;
   min-height: 480rpx;
+  max-height: 480rpx;
+  overflow: hidden;
 }
 
 .card-compact {
@@ -173,15 +145,15 @@
   background: radial-gradient(circle, rgba(168, 148, 196, 0.2) 0%, rgba(232, 214, 176, 0.12) 42%, rgba(168, 148, 196, 0) 72%);
 }
 
-.aurora-veil {
+.card-bg {
   position: absolute;
-  top: 20rpx;
-  right: 20rpx;
-  bottom: 20rpx;
-  left: 20rpx;
-  z-index: 1;
-  border-radius: 28rpx;
-  background: linear-gradient(180deg, rgba(247, 244, 238, 0.16), rgba(247, 244, 238, 0.28));
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
   pointer-events: none;
 }
 
@@ -192,15 +164,34 @@
   flex-direction: column;
   flex: 1;
   width: 100%;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  background: none;
+  background-color: transparent;
 }
 
-.face-back .face-content {
+.face-body {
   flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: none;
+  background-color: transparent;
 }
 
 .event {
   display: flex;
   align-items: baseline;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.kind,
+.status {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .kind {
@@ -221,14 +212,22 @@
 }
 
 .title {
-  display: block;
+  display: -webkit-box;
   margin-top: 20rpx;
   font-size: 40rpx;
   font-weight: var(--font-semibold);
   color: var(--text-primary);
   line-height: 1.28;
   letter-spacing: 0.01em;
-  white-space: pre-wrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.face-back .title {
+  -webkit-line-clamp: 2;
 }
 
 .reason {
@@ -246,6 +245,7 @@
 
 .action {
   display: block;
+  flex-shrink: 0;
   margin-top: auto;
   padding-top: 24rpx;
   font-size: var(--font-md);
@@ -259,12 +259,16 @@
   font-size: var(--font-sm);
   color: var(--text-tertiary);
   line-height: 1.6;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .back-fact {
   display: flex;
   align-items: baseline;
   margin-top: 16rpx;
+  min-width: 0;
 }
 
 .fact-label {
@@ -275,17 +279,22 @@
 }
 
 .fact-value {
+  min-width: 0;
   font-size: var(--font-sm);
   color: var(--text-secondary);
   line-height: 1.5;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .back-actions {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
   margin-top: auto;
-  padding-top: 32rpx;
+  padding-top: 24rpx;
 }
 
 .back-link {
