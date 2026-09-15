@@ -121,9 +121,10 @@
     </view>
 
     <view wx:elif="{{showServiceStatus}}" class="service-panel">
-      <section-header title="服务状态" />
-      <text class="service-title">{{serviceStatusText}}</text>
-      <text class="service-copy">{{serviceStatusHint}}</text>
+      <section-header title="服务办理" />
+      <text class="service-title service-tone-{{serviceStatusTone}}">{{serviceStatusText}}</text>
+      <text wx:if="{{serviceStatusHint}}" class="service-copy">{{serviceStatusHint}}</text>
+      <text wx:if="{{serviceTimeText}}" class="service-time">{{serviceTimeLabel}} {{serviceTimeText}}</text>
     </view>
 
     <view class="action">

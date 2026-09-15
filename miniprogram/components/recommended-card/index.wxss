@@ -48,13 +48,17 @@
 .reco-status-analyzing,
 .reco-status-checking,
 .reco-status-awaiting_service,
-.reco-status-in_progress {
+.reco-status-in_progress,
+.reco-status-handling {
   color: var(--brand-primary);
 }
 
-.reco-status-succeeded,
-.reco-status-completed {
+.reco-status-succeeded {
   color: var(--text-secondary);
+}
+
+.reco-status-completed {
+  color: var(--status-success);
 }
 
 .reco-status-closed {
@@ -62,7 +66,7 @@
 }
 
 .reco-status-failed {
-  color: #8a5a52;
+  color: var(--status-danger);
 }
 
 .reco-hint {

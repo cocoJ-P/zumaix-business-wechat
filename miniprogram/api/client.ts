@@ -12,10 +12,15 @@ export type RequestOptions = {
   timeout?: number
 }
 
-function buildHeaders(extra?: Record<string, string>): Record<string, string> {
+function buildHeaders(method: HttpMethod, extra?: Record<string, string>): Record<string, string> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(extra || {}),
+  }
+
+  if (method === 'GET') {
+    headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    headers['Pragma'] = 'no-cache'
   }
 
   if (DEV_USER_ID) {
@@ -25,6 +30,14 @@ function buildHeaders(extra?: Record<string, string>): Record<string, string> {
   }
 
   return headers
+}
+
+function withGetCacheBust(path: string, method: HttpMethod): string {
+  if (method !== 'GET') {
+    return path
+  }
+  const joiner = path.indexOf('?') >= 0 ? '&' : '?'
+  return `${path}${joiner}_nc=${Date.now()}`
 }
 
 function logApiError(path: string, error: ApiError): void {
@@ -39,10 +52,13 @@ function logApiError(path: string, error: ApiError): void {
  */
 export function request<T>(options: RequestOptions): Promise<T> {
   const method = options.method || 'GET'
-  const path = options.path.startsWith('/') ? options.path : `/${options.path}`
+  const path = withGetCacheBust(
+    options.path.startsWith('/') ? options.path : `/${options.path}`,
+    method
+  )
   const url = `${API_BASE_URL}${path}`
   const timeout = options.timeout ?? REQUEST_TIMEOUT_MS
-  const header = buildHeaders(options.headers)
+  const header = buildHeaders(method, options.headers)
 
   return new Promise<T>((resolve, reject) => {
     wx.request({

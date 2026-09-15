@@ -81,7 +81,7 @@ let discoveryDeck: DiscoveryItem[] = []
 let discoveryLoaded = false
 let recommendedAll: RecommendedItem[] = []
 let recommendedLoaded = false
-let recommendedLock = false
+let recommendedTail: Promise<void> = Promise.resolve()
 let feedLock = false
 const pendingFeedbackIds = new Set<string>()
 const seenAttempted = new Set<string>()
@@ -146,11 +146,13 @@ Page({
     void this.loadDiscoveryFeed()
   },
 
-  async loadRecommended() {
-    if (recommendedLock) {
-      return
-    }
-    recommendedLock = true
+  loadRecommended() {
+    const run = () => this.runRecommendedFetch()
+    recommendedTail = recommendedTail.then(run, run)
+    return recommendedTail
+  },
+
+  async runRecommendedFetch() {
     const showLoading = !recommendedLoaded || this.data.recommendedError
     if (showLoading) {
       this.setData({
@@ -193,9 +195,8 @@ Page({
         this.setData({
           recommendedLoading: false,
         })
+        wx.showToast({ title: '暂时无法更新内容', icon: 'none' })
       }
-    } finally {
-      recommendedLock = false
     }
   },
 
@@ -245,6 +246,7 @@ Page({
         this.setData({
           discoveryLoading: false,
         })
+        wx.showToast({ title: '暂时无法更新发现', icon: 'none' })
       }
     } finally {
       feedLock = false

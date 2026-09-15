@@ -132,6 +132,27 @@
   line-height: 1.4;
 }
 
+.service-tone-brand {
+  color: var(--brand-primary);
+}
+
+.service-tone-complete {
+  color: var(--status-success);
+}
+
+.service-tone-neutral,
+.service-tone-muted {
+  color: var(--text-secondary);
+}
+
+.service-time {
+  display: block;
+  margin-top: 10rpx;
+  font-size: var(--font-sm);
+  color: var(--text-tertiary);
+  line-height: 1.5;
+}
+
 .next-action {
   margin-top: 28rpx;
 }

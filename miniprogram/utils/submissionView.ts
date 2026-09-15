@@ -19,6 +19,8 @@ import type {
 
 const PREVIEW_MAX = 48
 
+export type StatusTone = 'brand' | 'muted' | 'complete' | 'neutral' | 'warning'
+
 const DISPLAY_STATUS_TEXT: Record<RecommendedDisplayStatus, string> = {
   pending: '待处理',
   ingesting: '读取中',
@@ -30,29 +32,35 @@ const DISPLAY_STATUS_TEXT: Record<RecommendedDisplayStatus, string> = {
   completed: '已完成',
   closed: '已关闭',
   checking: '处理中',
+  handling: '办理中',
 }
 
-const HOME_STATUS_HINT: Record<RecommendedDisplayStatus, string> = {
+const SECONDARY_LABEL: Record<RecommendedDisplayStatus, string> = {
   pending: '',
   ingesting: '',
   analyzing: '',
   failed: '',
   succeeded: '可继续办理',
-  awaiting_service: '已进入服务办理',
-  in_progress: '',
-  completed: '',
-  closed: '',
+  awaiting_service: '服务事项已提交，等待处理',
+  in_progress: '服务事项正在办理',
+  completed: '本次服务事项已完成',
+  closed: '本次服务事项已关闭',
   checking: '',
+  handling: '',
 }
 
-const CHECK_SERVICE_HINT: Record<
-  Extract<RecommendedDisplayStatus, 'awaiting_service' | 'in_progress' | 'completed' | 'closed'>,
-  string
-> = {
-  awaiting_service: '已提交，等待服务人员处理',
-  in_progress: '服务事项正在跟进',
-  completed: '本次服务事项已完成',
-  closed: '本次服务事项已结束',
+const STATUS_TONE: Record<RecommendedDisplayStatus, StatusTone> = {
+  pending: 'brand',
+  ingesting: 'brand',
+  analyzing: 'brand',
+  failed: 'warning',
+  succeeded: 'muted',
+  awaiting_service: 'brand',
+  in_progress: 'brand',
+  completed: 'complete',
+  closed: 'neutral',
+  checking: 'brand',
+  handling: 'brand',
 }
 
 function textValue(value: string | null | undefined): string {
@@ -123,24 +131,9 @@ export function canContinueToService(
   return submissionStatusOf(submissionStatus) === 'succeeded' && !linked
 }
 
-export function deriveRecommendedDisplayStatus(
-  submissionStatus: SubmissionStatus | RecommendedSubmissionStatus,
-  linked: LinkedServiceCase | null | undefined
+function displayStatusFromKnownCase(
+  caseStatus: RecommendedServiceCaseStatus
 ): RecommendedDisplayStatus {
-  return deriveDisplayStatusFromCase(
-    submissionStatus,
-    linked ? serviceCaseStatusOf(linked.status) : null
-  )
-}
-
-function deriveDisplayStatusFromCase(
-  submissionStatus: SubmissionStatus | RecommendedSubmissionStatus,
-  caseStatus: RecommendedServiceCaseStatus | null
-): RecommendedDisplayStatus {
-  const status = submissionStatusOf(submissionStatus)
-  if (status !== 'succeeded') {
-    return status
-  }
   if (caseStatus === 'open') {
     return 'awaiting_service'
   }
@@ -150,8 +143,34 @@ function deriveDisplayStatusFromCase(
   if (caseStatus === 'completed') {
     return 'completed'
   }
-  if (caseStatus === 'closed') {
-    return 'closed'
+  return 'closed'
+}
+
+export function deriveRecommendedDisplayStatus(
+  submissionStatus: SubmissionStatus | RecommendedSubmissionStatus,
+  linked: LinkedServiceCase | null | undefined
+): RecommendedDisplayStatus {
+  if (linked) {
+    const known = serviceCaseStatusOf(linked.status)
+    if (known) {
+      return displayStatusFromKnownCase(known)
+    }
+    console.warn(`[submissionView] unknown service case status: ${String(linked.status)}`)
+    return 'handling'
+  }
+  return deriveDisplayStatusFromCase(submissionStatus, null)
+}
+
+function deriveDisplayStatusFromCase(
+  submissionStatus: SubmissionStatus | RecommendedSubmissionStatus,
+  caseStatus: RecommendedServiceCaseStatus | null
+): RecommendedDisplayStatus {
+  if (caseStatus) {
+    return displayStatusFromKnownCase(caseStatus)
+  }
+  const status = submissionStatusOf(submissionStatus)
+  if (status !== 'succeeded') {
+    return status
   }
   return 'succeeded'
 }
@@ -161,7 +180,7 @@ export function getRecommendedStatusText(displayStatus: RecommendedDisplayStatus
 }
 
 export function getRecommendedStatusHint(displayStatus: RecommendedDisplayStatus): string {
-  return HOME_STATUS_HINT[displayStatus]
+  return SECONDARY_LABEL[displayStatus]
 }
 
 export function getCheckServiceStatusHint(displayStatus: RecommendedDisplayStatus): string {
@@ -169,11 +188,42 @@ export function getCheckServiceStatusHint(displayStatus: RecommendedDisplayStatu
     displayStatus === 'awaiting_service' ||
     displayStatus === 'in_progress' ||
     displayStatus === 'completed' ||
-    displayStatus === 'closed'
+    displayStatus === 'closed' ||
+    displayStatus === 'handling'
   ) {
-    return CHECK_SERVICE_HINT[displayStatus]
+    return SECONDARY_LABEL[displayStatus]
   }
   return ''
+}
+
+export function getStatusTone(displayStatus: RecommendedDisplayStatus): StatusTone {
+  return STATUS_TONE[displayStatus]
+}
+
+export function isTerminalDisplayStatus(displayStatus: RecommendedDisplayStatus): boolean {
+  return displayStatus === 'completed' || displayStatus === 'closed'
+}
+
+function serviceTimeForStatus(
+  displayStatus: RecommendedDisplayStatus,
+  linked: LinkedServiceCase | null | undefined
+): { label: string; text: string } {
+  if (!linked) {
+    return { label: '', text: '' }
+  }
+  if (displayStatus === 'awaiting_service') {
+    return { label: '提交时间', text: formatSubmissionTime(linked.created_at) }
+  }
+  if (displayStatus === 'in_progress') {
+    return { label: '最近更新', text: formatSubmissionTime(linked.updated_at) }
+  }
+  if (displayStatus === 'completed') {
+    return { label: '完成时间', text: formatSubmissionTime(linked.completed_at) }
+  }
+  if (displayStatus === 'closed') {
+    return { label: '关闭时间', text: formatSubmissionTime(linked.closed_at) }
+  }
+  return { label: '', text: '' }
 }
 
 export function linkedServiceCaseFromServiceCase(serviceCase: ServiceCase): LinkedServiceCase {
@@ -189,10 +239,18 @@ export function linkedServiceCaseFromServiceCase(serviceCase: ServiceCase): Link
 
 export type CheckServicePanel = {
   canContinueToService: boolean
+  canContinueService: boolean
   showContinueCta: boolean
   showServiceStatus: boolean
+  primaryLabel: string
+  secondaryLabel: string
+  statusTone: StatusTone
+  isTerminal: boolean
   serviceStatusText: string
   serviceStatusHint: string
+  serviceStatusTone: StatusTone
+  serviceTimeLabel: string
+  serviceTimeText: string
   continueButtonText: string
 }
 
@@ -203,13 +261,26 @@ export function projectCheckServicePanel(
 ): CheckServicePanel {
   const canContinue = canContinueToService(submissionStatus, linked)
   const displayStatus = deriveRecommendedDisplayStatus(submissionStatus, linked)
-  const showServiceStatus = !canContinue && !!getCheckServiceStatusHint(displayStatus)
+  const showServiceStatus = !canContinue && !!linked
+  const primaryLabel = showServiceStatus ? getRecommendedStatusText(displayStatus) : ''
+  const secondaryLabel = showServiceStatus ? getCheckServiceStatusHint(displayStatus) : ''
+  const statusTone = getStatusTone(displayStatus)
+  const isTerminal = showServiceStatus && isTerminalDisplayStatus(displayStatus)
+  const time = showServiceStatus ? serviceTimeForStatus(displayStatus, linked) : { label: '', text: '' }
   return {
     canContinueToService: canContinue,
+    canContinueService: canContinue,
     showContinueCta: canContinue,
     showServiceStatus,
-    serviceStatusText: showServiceStatus ? getRecommendedStatusText(displayStatus) : '',
-    serviceStatusHint: showServiceStatus ? getCheckServiceStatusHint(displayStatus) : '',
+    primaryLabel,
+    secondaryLabel,
+    statusTone,
+    isTerminal,
+    serviceStatusText: primaryLabel,
+    serviceStatusHint: secondaryLabel,
+    serviceStatusTone: statusTone,
+    serviceTimeLabel: time.label,
+    serviceTimeText: time.text,
     continueButtonText: pending ? '正在办理…' : '继续办理',
   }
 }
@@ -235,6 +306,8 @@ function buildRecommendedItem(input: {
     displayStatus,
     statusText: getRecommendedStatusText(displayStatus),
     statusHint: getRecommendedStatusHint(displayStatus),
+    statusTone: getStatusTone(displayStatus),
+    isTerminal: isTerminalDisplayStatus(displayStatus),
     serviceCaseStatus: linked ? serviceCaseStatusOf(linked.status) : null,
     canContinueToService: canContinueToService(status, linked),
     preview: truncateText(input.preview, PREVIEW_MAX),
@@ -387,6 +460,9 @@ export function patchRecommendedItem(
       statusText: patch.statusText || getRecommendedStatusText(displayStatus),
       statusHint:
         patch.statusHint !== undefined ? patch.statusHint : getRecommendedStatusHint(displayStatus),
+      statusTone: patch.statusTone || getStatusTone(displayStatus),
+      isTerminal:
+        patch.isTerminal !== undefined ? patch.isTerminal : isTerminalDisplayStatus(displayStatus),
     }
   })
 }
@@ -439,10 +515,18 @@ export function getContinueToServiceErrorMessage(error: ApiError): string {
 export function emptyCheckServicePanel(): CheckServicePanel {
   return {
     canContinueToService: false,
+    canContinueService: false,
     showContinueCta: false,
     showServiceStatus: false,
+    primaryLabel: '',
+    secondaryLabel: '',
+    statusTone: 'muted',
+    isTerminal: false,
     serviceStatusText: '',
     serviceStatusHint: '',
+    serviceStatusTone: 'muted',
+    serviceTimeLabel: '',
+    serviceTimeText: '',
     continueButtonText: '继续办理',
   }
 }

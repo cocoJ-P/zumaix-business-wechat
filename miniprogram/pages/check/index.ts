@@ -47,6 +47,9 @@ type CheckData = {
   serviceStatusText: string
   serviceStatusHint: string
   continueButtonText: string
+  serviceStatusTone: string
+  serviceTimeLabel: string
+  serviceTimeText: string
 }
 
 function isAmbiguousNetworkError(error: ApiError): boolean {
@@ -60,6 +63,8 @@ Page({
   _submissionId: undefined as string | undefined,
   _submissionStatus: undefined as SubmissionStatus | undefined,
   _linkedServiceCase: null as LinkedServiceCase | null,
+  _skipNextOnShowRefresh: false,
+  _silentRefreshLock: false,
 
   data: {
     phase: 'idle',
@@ -79,6 +84,7 @@ Page({
 
   onLoad(query: { submissionId?: string }) {
     this._alive = true
+    this._skipNextOnShowRefresh = true
     const input = takePendingCheck()
     if (input) {
       this._input = input
@@ -94,6 +100,18 @@ Page({
       return
     }
     this.setData({ phase: 'idle' })
+  },
+
+  onShow() {
+    if (this._skipNextOnShowRefresh) {
+      this._skipNextOnShowRefresh = false
+      return
+    }
+    void this.silentRefreshDetail()
+  },
+
+  onPullDownRefresh() {
+    void this.silentRefreshDetail(true)
   },
 
   onUnload() {
@@ -136,6 +154,44 @@ Page({
   applyLinkedServiceCase(linked: LinkedServiceCase | null) {
     this._linkedServiceCase = linked
     this.safeSetData(this.servicePanelPatch(linked, false))
+  },
+
+  async silentRefreshDetail(fromPullDown?: boolean) {
+    const submissionId = this._submissionId
+    const busyWorking = this.data.phase === 'creating' || this.data.phase === 'processing'
+    if (
+      !submissionId ||
+      busyWorking ||
+      this._silentRefreshLock ||
+      this.data.continueToServicePending
+    ) {
+      if (fromPullDown) {
+        wx.stopPullDownRefresh()
+      }
+      return
+    }
+    this._silentRefreshLock = true
+    const hasShownResult = this.data.phase === 'success'
+    try {
+      const detail = await getUserSubmission(submissionId)
+      if (!this._alive) {
+        return
+      }
+      this.applySubmissionDetail(detail, 'get')
+    } catch (error) {
+      const apiError = toApiError(error)
+      console.warn(`[check] silent-refresh ${apiError.code}`)
+      if (hasShownResult) {
+        wx.showToast({ title: '暂时无法更新办理状态', icon: 'none' })
+      } else if (this.data.phase !== 'creating' && this.data.phase !== 'processing') {
+        wx.showToast({ title: '暂时无法更新', icon: 'none' })
+      }
+    } finally {
+      this._silentRefreshLock = false
+      if (fromPullDown) {
+        wx.stopPullDownRefresh()
+      }
+    }
   },
 
   startCreate() {

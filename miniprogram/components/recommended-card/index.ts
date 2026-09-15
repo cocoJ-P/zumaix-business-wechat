@@ -15,4 +15,21 @@ Component({
       value: false,
     },
   },
+  data: {
+    card: {} as RecommendedItem,
+  },
+  lifetimes: {
+    attached() {
+      this.setData({
+        card: (this.properties.item || {}) as RecommendedItem,
+      })
+    },
+  },
+  observers: {
+    item(item: RecommendedItem) {
+      this.setData({
+        card: item || ({} as RecommendedItem),
+      })
+    },
+  },
 })

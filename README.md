@@ -5,10 +5,10 @@
 当前阶段：
 
 ```text
-D6.2 Mini Program Continue-to-Service
+D6.8 Mini Program Case Status
 ```
 
-首页输入入口提交 URL / 正文；「为您推荐」是当前用户的 UserSubmission 工作列表；「为您推送」右滑会 accept 进同一解析工作流。解析完成后，用户必须明确点击「继续办理」才会创建 ServiceCase。机会 Tab 仍基于 Mock Data。
+首页输入入口提交 URL / 正文；「为您推荐」是当前用户的 UserSubmission 工作列表；「为您推送」右滑会 accept 进同一解析工作流。解析完成后，用户必须明确点击「继续办理」才会创建 ServiceCase。办理状态只来自 `linked_service_case.status`。机会 Tab 仍基于 Mock Data。
 
 用微信开发者工具打开本目录即可编译预览。AppID 已保留在 `project.config.json`。
 
@@ -271,6 +271,30 @@ UserSubmission 仍是内容解析 / 理解。ServiceCase 是独立的企业服�
 
 首页推荐卡不直接创建 Case。继续办理只出现在 Check 解析结果页：`succeeded` 且 `linked_service_case = null`。
 
+Case 状态只读 Backend 投影：
+
+```text
+linked_service_case.status
+
+open         → 待服务
+in_progress  → 处理中
+completed    → 已完成
+closed       → 已关闭
+```
+
+小程序不维护独立状态机，不根据飞书 / 时间推断。用户界面不出现飞书、同步失败或 Binding。
+
+状态刷新：
+
+```text
+Home onShow          → GET /api/user-submissions/mine
+Check onShow         → GET /api/user-submissions/{id}（首次 onLoad 不重复）
+首页下拉刷新         → /mine + /feed
+Check 下拉刷新       → GET /api/user-submissions/{id}
+```
+
+无 Polling、WebSocket、SSE。重新进入、返回页面或下拉即可看到最新办理状态。
+
 ## Discovery Feed
 
 ```text
@@ -353,18 +377,14 @@ succeeded submission = 未来可继续办理的输入（本阶段不自动创建
 尚未实现：
 
 ```text
-D6.3 Service Frontend Case Workspace
-D6.4 Feishu Adapter
-D6.5 Outbound Sync
-D6.6 Feishu Status Sync
-D6.7 Retry
-D6.8 Mini Program Case Status
-ServiceCase Status Mutation API
-飞书
-ServiceCase 独立用户页
-取消办理 / reopen
-Saved Detail / 取消保存 / Undo
+D6.9 Final E2E
 Push / Notification
+WebSocket / SSE / Polling
+服务人员姓名 / 办理备注 / 进度时间线
+催办 / 撤回 / 再次办理 / 评价
+ServiceCase 独立用户页
+ServiceCase public mutation
+飞书 Binding / 同步错误 / Retry UI
 Matching
 Lead
 Verification
@@ -377,5 +397,5 @@ Opportunity Resolution
 下一阶段：
 
 ```text
-D6.3 Service Frontend Case Workspace
+D6.9 Final E2E
 ```

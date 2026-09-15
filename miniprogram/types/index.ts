@@ -104,6 +104,7 @@ export type RecommendedDisplayStatus =
   | 'completed'
   | 'closed'
   | 'checking'
+  | 'handling'
 
 export type RecommendedServiceCaseStatus = 'open' | 'in_progress' | 'completed' | 'closed'
 
@@ -114,6 +115,8 @@ export type RecommendedItem = {
   displayStatus: RecommendedDisplayStatus
   statusText: string
   statusHint: string
+  statusTone: 'brand' | 'muted' | 'complete' | 'neutral' | 'warning'
+  isTerminal: boolean
   serviceCaseStatus: RecommendedServiceCaseStatus | null
   canContinueToService: boolean
   preview: string
