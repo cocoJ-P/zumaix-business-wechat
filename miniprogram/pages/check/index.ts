@@ -50,6 +50,7 @@ type CheckData = {
   serviceStatusTone: string
   serviceTimeLabel: string
   serviceTimeText: string
+  serviceRenderKey: string
 }
 
 function isAmbiguousNetworkError(error: ApiError): boolean {
@@ -328,6 +329,9 @@ Page({
     this._linkedServiceCase = detail.linked_service_case || null
     if (status === 'succeeded') {
       this.unlockFlow()
+      console.warn(
+        `[check] case ${this._linkedServiceCase ? this._linkedServiceCase.status : 'null'}`
+      )
       this.safeSetData({
         phase: 'success',
         busy: false,

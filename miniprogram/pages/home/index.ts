@@ -174,6 +174,12 @@ Page({
         return !mapped.some((item) => item.originDiscoveryId === discoveryId)
       })
       recommendedAll = [...pendingTemps, ...mapped]
+      console.warn(
+        `[home] mine ${mapped
+          .slice(0, 4)
+          .map((item) => `${item.statusText}:${item.title.slice(0, 12)}`)
+          .join(' | ')}`
+      )
       this.setData({
         recommendedLoading: false,
         recommendedError: false,

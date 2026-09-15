@@ -26,9 +26,10 @@ Component({
     },
   },
   observers: {
-    item(item: RecommendedItem) {
+    'item.**': function () {
+      const item = (this.properties.item || {}) as RecommendedItem
       this.setData({
-        card: item || ({} as RecommendedItem),
+        card: item,
       })
     },
   },

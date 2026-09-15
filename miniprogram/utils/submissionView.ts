@@ -252,6 +252,7 @@ export type CheckServicePanel = {
   serviceTimeLabel: string
   serviceTimeText: string
   continueButtonText: string
+  serviceRenderKey: string
 }
 
 export function projectCheckServicePanel(
@@ -281,6 +282,9 @@ export function projectCheckServicePanel(
     serviceStatusTone: statusTone,
     serviceTimeLabel: time.label,
     serviceTimeText: time.text,
+    serviceRenderKey: showServiceStatus
+      ? `${displayStatus}:${linked && linked.status ? linked.status : ''}:${linked && linked.updated_at ? linked.updated_at : ''}`
+      : '',
     continueButtonText: pending ? '正在办理…' : '继续办理',
   }
 }
@@ -316,6 +320,7 @@ function buildRecommendedItem(input: {
     originType: input.originType,
     originDiscoveryId: input.originDiscoveryId || null,
     tempDiscoveryId: input.tempDiscoveryId,
+    listKey: `${input.id}:${displayStatus}:${linked && linked.updated_at ? linked.updated_at : ''}`,
   }
 }
 
@@ -463,6 +468,7 @@ export function patchRecommendedItem(
       statusTone: patch.statusTone || getStatusTone(displayStatus),
       isTerminal:
         patch.isTerminal !== undefined ? patch.isTerminal : isTerminalDisplayStatus(displayStatus),
+      listKey: `${id}:${displayStatus}:${serviceCaseStatus || ''}`,
     }
   })
 }
@@ -528,5 +534,6 @@ export function emptyCheckServicePanel(): CheckServicePanel {
     serviceTimeLabel: '',
     serviceTimeText: '',
     continueButtonText: '继续办理',
+    serviceRenderKey: '',
   }
 }

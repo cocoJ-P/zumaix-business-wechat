@@ -125,6 +125,7 @@ export type RecommendedItem = {
   originType: 'user_input' | 'discovery'
   originDiscoveryId?: string | null
   tempDiscoveryId?: string
+  listKey: string
 }
 
 export type InboxStatus = 'analyzing' | 'waiting' | 'done'

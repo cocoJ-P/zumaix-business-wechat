@@ -120,12 +120,14 @@
       </view>
     </view>
 
-    <view wx:elif="{{showServiceStatus}}" class="service-panel">
-      <section-header title="服务办理" />
-      <text class="service-title service-tone-{{serviceStatusTone}}">{{serviceStatusText}}</text>
-      <text wx:if="{{serviceStatusHint}}" class="service-copy">{{serviceStatusHint}}</text>
-      <text wx:if="{{serviceTimeText}}" class="service-time">{{serviceTimeLabel}} {{serviceTimeText}}</text>
-    </view>
+    <block wx:elif="{{showServiceStatus}}">
+      <view wx:for="{{[serviceRenderKey]}}" wx:key="*this" class="service-panel">
+        <section-header title="服务办理" />
+        <text class="service-title service-tone-{{serviceStatusTone}}">{{serviceStatusText}}</text>
+        <text wx:if="{{serviceStatusHint}}" class="service-copy">{{serviceStatusHint}}</text>
+        <text wx:if="{{serviceTimeText}}" class="service-time">{{serviceTimeLabel}} {{serviceTimeText}}</text>
+      </view>
+    </block>
 
     <view class="action">
       <secondary-button text="分析新内容" bind:tap="onNewAnalysis" />
