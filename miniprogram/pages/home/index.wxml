@@ -111,7 +111,10 @@
           />
         </view>
           <view wx:if="{{next}}" class="peek">
-          <view class="peek-card visual-{{next.visualState === 'deprioritized' ? 'plain' : 'fresh'}}">
+          <view
+            class="peek-card visual-{{next.visualState === 'deprioritized' ? 'plain' : 'fresh'}} ink-{{next.ink === 'light' ? 'light' : 'dark'}} {{peekCardStyle ? 'has-theme' : ''}}"
+            style="{{peekCardStyle}}"
+          >
             <image
               wx:if="{{next.backgroundImage && next.visualState !== 'deprioritized' && !peekBgFailed}}"
               class="peek-bg"
@@ -119,10 +122,7 @@
               mode="aspectFill"
               binderror="onPeekBgError"
             />
-            <view
-              wx:if="{{next.backgroundImage && next.visualState !== 'deprioritized' && !peekBgFailed}}"
-              class="peek-veil"
-            ></view>
+            <view wx:if="{{peekScrimStyle && !peekBgFailed}}" class="peek-scrim" style="{{peekScrimStyle}}"></view>
             <view wx:if="{{next.kind || next.eventStatus}}" class="peek-event">
               <text wx:if="{{next.kind}}" class="peek-kind">{{next.kind}}</text>
               <text wx:if="{{next.kind && next.eventStatus}}" class="peek-sep">·</text>

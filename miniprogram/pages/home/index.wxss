@@ -281,14 +281,14 @@ page {
   pointer-events: none;
 }
 
-.peek-veil {
+.peek-scrim {
   position: absolute;
   top: 0;
   right: 0;
   bottom: 0;
   left: 0;
   z-index: 1;
-  background: linear-gradient(180deg, rgba(247, 244, 238, 0.28), rgba(247, 244, 238, 0.72));
+  pointer-events: none;
 }
 
 .peek-event,
@@ -301,6 +301,27 @@ page {
   background: linear-gradient(158deg, #e6f0ea 0%, #e7eef6 36%, #ece8f3 70%, #f5f0e6 100%);
 }
 
+.peek-card.has-theme {
+  background-image: none;
+}
+
+.peek-card.ink-light .peek-kind,
+.peek-card.ink-light .peek-status,
+.peek-card.ink-light .peek-title {
+  color: #ffffff;
+  text-shadow: 0 2rpx 12rpx rgba(0, 24, 72, 0.28);
+}
+
+.peek-card.ink-light .peek-sep {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.peek-card.ink-dark.has-theme .peek-kind,
+.peek-card.ink-dark.has-theme .peek-status,
+.peek-card.ink-dark.has-theme .peek-title {
+  text-shadow: 0 2rpx 10rpx rgba(255, 255, 255, 0.7);
+}
+
 .peek-card.visual-plain {
   background: #f7f4ee;
   border: 1rpx solid rgba(28, 28, 26, 0.07);
@@ -309,6 +330,7 @@ page {
 .peek-event {
   display: flex;
   align-items: baseline;
+  max-width: 68%;
 }
 
 .peek-kind {
@@ -331,6 +353,7 @@ page {
 .peek-title {
   display: block;
   margin-top: 20rpx;
+  max-width: 68%;
   font-size: 40rpx;
   font-weight: var(--font-semibold);
   color: var(--text-primary);

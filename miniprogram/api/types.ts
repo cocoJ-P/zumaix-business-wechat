@@ -255,12 +255,14 @@ export type DiscoveryPriority = 'high' | 'normal' | 'low'
 export type DiscoveryReferenceType = 'opportunity' | 'source' | 'manual'
 
 export type DiscoveryOpportunityType =
+  | 'beichen'
+  | 'finance'
   | 'policy'
+  | 'scenario'
   | 'competition'
   | 'financial_service'
   | 'equity_funding'
   | 'park_service'
-  | 'scenario'
   | 'other'
 
 export type DiscoveryActor = {

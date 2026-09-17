@@ -1,65 +1,134 @@
 /**
- * 「为您推送」卡片背景图映射表
+ * 「为您推送」卡片主题：四套固定视觉
  *
  * 图片目录：miniprogram/images/discovery-bg/
- * 在微信开发者工具中对应路径：/images/discovery-bg/
+ * 微信开发者工具路径：/images/discovery-bg/
  *
- * 按种类放入同名 png（也可用 jpg，改下方路径后缀即可）。
- * 文件缺失时卡片会自动回退到原来的渐变背景。
+ * 后端传 opportunity_type 为下面四个 key 时，直接落到对应卡片：
+ * beichen / finance / policy / scenario
  *
- * | 种类     | 文件名                 |
- * | -------- | ---------------------- |
- * | 政策     | policy.png             |
- * | 创赛     | competition.png        |
- * | 金融服务 | financial-service.png  |
- * | 股权融资 | equity-funding.png     |
- * | 园区服务 | park-service.png       |
- * | 场景机会 | scenario.png           |
- * | 其他     | other.png              |
- * | 内容     | content.png            |
- * | 推荐     | recommend.png          |
- * | 缺省     | default.png            |
+ * 旧类型（financial_service、创赛等）会兼容映射到这四套。
  */
 
 const BG_DIR = '/images/discovery-bg'
 
-export const DISCOVERY_BACKGROUND_DEFAULT = `${BG_DIR}/default.png`
+export type DiscoveryCardThemeKey = 'beichen' | 'finance' | 'policy' | 'scenario'
 
-export const DISCOVERY_BACKGROUND_BY_TYPE: Record<string, string> = {
-  policy: `${BG_DIR}/policy.png`,
-  competition: `${BG_DIR}/competition.png`,
-  financial_service: `${BG_DIR}/financial-service.png`,
-  equity_funding: `${BG_DIR}/equity-funding.png`,
-  park_service: `${BG_DIR}/park-service.png`,
-  scenario: `${BG_DIR}/scenario.png`,
-  other: `${BG_DIR}/other.png`,
+export type DiscoveryCardInk = 'light' | 'dark'
+
+export type DiscoveryCardTheme = {
+  key: DiscoveryCardThemeKey
+  backgroundImage: string
+  backColor: string
+  ink: DiscoveryCardInk
 }
 
-export const DISCOVERY_BACKGROUND_BY_KIND: Record<string, string> = {
-  政策: DISCOVERY_BACKGROUND_BY_TYPE.policy,
-  创赛: DISCOVERY_BACKGROUND_BY_TYPE.competition,
-  金融服务: DISCOVERY_BACKGROUND_BY_TYPE.financial_service,
-  股权融资: DISCOVERY_BACKGROUND_BY_TYPE.equity_funding,
-  融资: DISCOVERY_BACKGROUND_BY_TYPE.equity_funding,
-  园区服务: DISCOVERY_BACKGROUND_BY_TYPE.park_service,
-  场景机会: DISCOVERY_BACKGROUND_BY_TYPE.scenario,
-  场景: DISCOVERY_BACKGROUND_BY_TYPE.scenario,
-  其他: DISCOVERY_BACKGROUND_BY_TYPE.other,
-  内容: `${BG_DIR}/content.png`,
-  推荐: `${BG_DIR}/recommend.png`,
+export const DISCOVERY_CARD_THEMES: Record<DiscoveryCardThemeKey, DiscoveryCardTheme> = {
+  beichen: {
+    key: 'beichen',
+    backgroundImage: `${BG_DIR}/beichen.png`,
+    backColor: '#0061ED',
+    ink: 'light',
+  },
+  finance: {
+    key: 'finance',
+    backgroundImage: `${BG_DIR}/finance.png`,
+    backColor: '#BB426B',
+    ink: 'light',
+  },
+  policy: {
+    key: 'policy',
+    backgroundImage: `${BG_DIR}/policy.png`,
+    backColor: '#DAE4F1',
+    ink: 'dark',
+  },
+  scenario: {
+    key: 'scenario',
+    backgroundImage: `${BG_DIR}/scenario.png`,
+    backColor: '#DEFAE5',
+    ink: 'dark',
+  },
+}
+
+export const DISCOVERY_CARD_THEME_DEFAULT: DiscoveryCardThemeKey = 'beichen'
+
+/** 后端 opportunity_type → 四套卡片。与文件名相同的 key 会直接命中。 */
+const THEME_BY_TYPE: Record<string, DiscoveryCardThemeKey> = {
+  beichen: 'beichen',
+  finance: 'finance',
+  policy: 'policy',
+  scenario: 'scenario',
+  financial_service: 'finance',
+  equity_funding: 'finance',
+  competition: 'beichen',
+  park_service: 'beichen',
+  other: 'beichen',
+}
+
+const THEME_BY_KIND: Record<string, DiscoveryCardThemeKey> = {
+  北辰: 'beichen',
+  政策: 'policy',
+  金融服务: 'finance',
+  股权融资: 'finance',
+  融资: 'finance',
+  场景机会: 'scenario',
+  场景: 'scenario',
+  创赛: 'beichen',
+  园区服务: 'beichen',
+  其他: 'beichen',
+  内容: 'beichen',
+  推荐: 'beichen',
+}
+
+export function resolveDiscoveryCardTheme(input: {
+  opportunityType?: string | null
+  kind?: string | null
+}): DiscoveryCardTheme {
+  const typeKey = input.opportunityType ? THEME_BY_TYPE[input.opportunityType] : ''
+  if (typeKey) {
+    return DISCOVERY_CARD_THEMES[typeKey]
+  }
+  const kindKey = input.kind ? THEME_BY_KIND[input.kind] : ''
+  if (kindKey) {
+    return DISCOVERY_CARD_THEMES[kindKey]
+  }
+  return DISCOVERY_CARD_THEMES[DISCOVERY_CARD_THEME_DEFAULT]
 }
 
 export function resolveDiscoveryBackground(input: {
   opportunityType?: string | null
   kind?: string | null
 }): string {
-  const typeKey = input.opportunityType ? DISCOVERY_BACKGROUND_BY_TYPE[input.opportunityType] : ''
-  if (typeKey) {
-    return typeKey
+  return resolveDiscoveryCardTheme(input).backgroundImage
+}
+
+function parseHexColor(hex: string): { r: number; g: number; b: number } | null {
+  const raw = (hex || '').replace('#', '').trim()
+  if (/^[0-9a-fA-F]{3}$/.test(raw)) {
+    return {
+      r: parseInt(raw[0] + raw[0], 16),
+      g: parseInt(raw[1] + raw[1], 16),
+      b: parseInt(raw[2] + raw[2], 16),
+    }
   }
-  const kindKey = input.kind ? DISCOVERY_BACKGROUND_BY_KIND[input.kind] : ''
-  if (kindKey) {
-    return kindKey
+  if (!/^[0-9a-fA-F]{6}$/.test(raw)) {
+    return null
   }
-  return DISCOVERY_BACKGROUND_DEFAULT
+  return {
+    r: parseInt(raw.slice(0, 2), 16),
+    g: parseInt(raw.slice(2, 4), 16),
+    b: parseInt(raw.slice(4, 6), 16),
+  }
+}
+
+/** 用卡片主色盖住文字区，避免正文叠到右侧装饰或左下浅色块上。 */
+export function buildDiscoveryCardScrimStyle(backColor: string): string {
+  const rgb = parseHexColor(backColor)
+  if (!rgb) {
+    return ''
+  }
+  const solid = `rgb(${rgb.r},${rgb.g},${rgb.b})`
+  const soft = `rgba(${rgb.r},${rgb.g},${rgb.b},0.86)`
+  const fade = `rgba(${rgb.r},${rgb.g},${rgb.b},0)`
+  return `background-image:linear-gradient(90deg,${solid} 0%,${solid} 30%,${soft} 50%,${fade} 72%),linear-gradient(0deg,${solid} 0%,${solid} 18%,${fade} 48%);`
 }

@@ -1,4 +1,5 @@
 import type { DiscoveryItem } from '../../types/index'
+import { buildDiscoveryCardScrimStyle } from '../../utils/discoveryBackground'
 
 const AXIS_LOCK = 9
 const TAP_SLOP = 24
@@ -42,6 +43,9 @@ Component({
     moverStyle: '',
     bgFailed: false,
     showPhoto: false,
+    cardFaceStyle: '',
+    scrimStyle: '',
+    ink: 'dark',
   },
   lifetimes: {
     attached() {
@@ -71,22 +75,22 @@ Component({
     syncTint(value: unknown, bgFailed?: boolean) {
       const item = value as DiscoveryItem
       const failed = typeof bgFailed === 'boolean' ? bgFailed : this.data.bgFailed
-      const canShowPhoto = !!(
-        item &&
-        item.backgroundImage &&
-        item.visualState !== 'deprioritized' &&
-        !failed
-      )
+      const themed = !!(item && item.backColor && item.visualState !== 'deprioritized')
+      const canShowPhoto = !!(themed && item.backgroundImage && !failed)
       this.setData({
         displayTitle: (item && item.title ? item.title : '').replace(/\n/g, ''),
         bgFailed: failed,
         showPhoto: canShowPhoto,
+        cardFaceStyle: themed ? `background:${item.backColor};` : '',
+        scrimStyle: canShowPhoto ? buildDiscoveryCardScrimStyle(item.backColor as string) : '',
+        ink: themed && item.ink === 'light' ? 'light' : 'dark',
       })
     },
     onBgError() {
       this.setData({
         bgFailed: true,
         showPhoto: false,
+        scrimStyle: '',
       })
     },
     isLarge() {

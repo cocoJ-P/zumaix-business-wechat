@@ -2,21 +2,22 @@ import type { ApiError } from '../api/errors'
 import type {
   DiscoveryCurrentUserState,
   DiscoveryFeedItem,
-  DiscoveryOpportunityType,
   DiscoveryReferenceType,
   DiscoveryStatus,
 } from '../api/types'
 import type { DiscoveryItem } from '../types/index'
-import { resolveDiscoveryBackground } from './discoveryBackground'
+import { resolveDiscoveryCardTheme } from './discoveryBackground'
 
-const OPPORTUNITY_TYPE_LABEL: Record<DiscoveryOpportunityType, DiscoveryItem['kind']> = {
+const OPPORTUNITY_TYPE_LABEL: Record<string, DiscoveryItem['kind']> = {
   policy: '政策',
   competition: '创赛',
   financial_service: '金融服务',
+  finance: '金融服务',
   equity_funding: '股权融资',
   park_service: '园区服务',
   scenario: '场景机会',
   other: '其他',
+  beichen: '北辰',
 }
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000
@@ -100,7 +101,7 @@ export function formatDiscoveryDeadline(
 }
 
 function mapKindLabel(
-  opportunityType: DiscoveryOpportunityType | null,
+  opportunityType: string | null,
   referenceType: DiscoveryReferenceType
 ): DiscoveryItem['kind'] {
   if (opportunityType && OPPORTUNITY_TYPE_LABEL[opportunityType]) {
@@ -150,6 +151,10 @@ export function mapDiscoveryToCardViewModel(
   const frontReason = reason || (summary ? truncateText(summary, FRONT_REASON_MAX) : '')
   const state = item.current_user_state
   const kind = mapKindLabel(item.opportunity_type, item.reference_type)
+  const theme = resolveDiscoveryCardTheme({
+    opportunityType: item.opportunity_type,
+    kind,
+  })
   return {
     id: item.id,
     kind,
@@ -165,10 +170,10 @@ export function mapDiscoveryToCardViewModel(
     hasReferenceSource: !!textValue(item.reference_url),
     seenAt: state && state.seen_at ? state.seen_at : null,
     visualState: visualStateFromUserState(state),
-    backgroundImage: resolveDiscoveryBackground({
-      opportunityType: item.opportunity_type,
-      kind,
-    }),
+    cardTheme: theme.key,
+    backgroundImage: theme.backgroundImage,
+    backColor: theme.backColor,
+    ink: theme.ink,
   }
 }
 

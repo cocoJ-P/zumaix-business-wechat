@@ -67,6 +67,11 @@ export type DiscoveryKind =
   | '其他'
   | '内容'
   | '推荐'
+  | '北辰'
+
+export type DiscoveryCardTheme = 'beichen' | 'finance' | 'policy' | 'scenario'
+
+export type DiscoveryCardInk = 'light' | 'dark'
 
 export interface DiscoveryItem {
   id: string
@@ -83,7 +88,10 @@ export interface DiscoveryItem {
   hasReferenceSource?: boolean
   seenAt?: string | null
   visualState?: 'fresh' | 'deprioritized'
+  cardTheme?: DiscoveryCardTheme
   backgroundImage?: string
+  backColor?: string
+  ink?: DiscoveryCardInk
 }
 
 export type RecommendedSubmissionStatus =

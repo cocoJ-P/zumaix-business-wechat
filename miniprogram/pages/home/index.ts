@@ -4,6 +4,7 @@ import { getUserSubmission, listMyUserSubmissions, processUserSubmission } from 
 import type { DiscoveryItem, RecommendedItem } from '../../types/index'
 import { startCheckFlow, openSubmissionCheck } from '../../utils/checkSession'
 import { getDiscoveryFeedErrorMessage, mapDiscoveryFeedToCardViewModels } from '../../utils/discoveryView'
+import { buildDiscoveryCardScrimStyle } from '../../utils/discoveryBackground'
 import {
   createTempRecommendedFromDiscovery,
   filterSucceededRecommendedItems,
@@ -53,6 +54,8 @@ type HomeData = {
   current: DiscoveryItem | null
   next: DiscoveryItem | null
   peekBgFailed: boolean
+  peekCardStyle: string
+  peekScrimStyle: string
   homeRefreshing: boolean
   gesture: GestureState
   deckEntering: boolean
@@ -110,6 +113,8 @@ Page({
     current: null,
     next: null,
     peekBgFailed: false,
+    peekCardStyle: '',
+    peekScrimStyle: '',
     homeRefreshing: false,
     gesture: { ...IDLE_GESTURE },
     deckEntering: false,
@@ -234,6 +239,8 @@ Page({
         discoveryErrorMessage: '',
         current: null,
         next: null,
+        peekCardStyle: '',
+        peekScrimStyle: '',
         discoveryCount: 0,
       })
     }
@@ -260,6 +267,8 @@ Page({
           discoveryErrorMessage: getDiscoveryFeedErrorMessage(apiError),
           current: null,
           next: null,
+          peekCardStyle: '',
+          peekScrimStyle: '',
           discoveryCount: 0,
           feedbackLocked: false,
         })
@@ -278,10 +287,13 @@ Page({
     const current = discoveryDeck[0] || null
     const next = discoveryDeck[1] || null
     const entering = !!(options && options.entering)
+    const peekThemed = !!(next && next.backColor && next.visualState !== 'deprioritized')
     this.setData({
       current,
       next,
       peekBgFailed: false,
+      peekCardStyle: peekThemed ? `background:${next.backColor};` : '',
+      peekScrimStyle: peekThemed ? buildDiscoveryCardScrimStyle(next.backColor as string) : '',
       discoveryCount: discoveryDeck.length,
       deckEntering: entering,
       feedbackLocked: !!(current && pendingFeedbackIds.has(current.id)),
@@ -321,7 +333,10 @@ Page({
   },
 
   onPeekBgError() {
-    this.setData({ peekBgFailed: true })
+    this.setData({
+      peekBgFailed: true,
+      peekScrimStyle: '',
+    })
   },
 
   onComposeInput(event: { detail: { value: string } }) {

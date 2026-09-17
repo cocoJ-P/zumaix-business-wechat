@@ -1,47 +1,59 @@
 import type { DiscoveryItem, InboxItem } from '../types/index'
+import { resolveDiscoveryCardTheme } from '../utils/discoveryBackground'
+
+function withCardTheme(item: DiscoveryItem): DiscoveryItem {
+  const theme = resolveDiscoveryCardTheme({ kind: item.kind })
+  return {
+    ...item,
+    cardTheme: theme.key,
+    backgroundImage: theme.backgroundImage,
+    backColor: theme.backColor,
+    ink: theme.ink,
+  }
+}
 
 /** 仅供 workbench fixture / 演示页。首页「为你发现」Runtime 不得使用。 */
 export const mockFeaturedDiscoveries: DiscoveryItem[] = [
-  {
+  withCardTheme({
     id: 'disc-01',
     kind: '政策',
     eventStatus: '3 天后截止',
     title: '科技型企业研发创新\n支持专项延长申报',
     reason: '与你当前「科技型企业 / AI 研发」状态高度相关',
     opportunityId: 'opp-policy-01',
-  },
-  {
+  }),
+  withCardTheme({
     id: 'disc-02',
     kind: '场景',
     eventStatus: '今天发布',
     title: '朝阳区开放一批\nAI 企业真实应用场景',
     reason: '与你当前「寻找真实场景」目标高度相关',
     opportunityId: 'opp-policy-02',
-  },
-  {
+  }),
+  withCardTheme({
     id: 'disc-03',
     kind: '创赛',
     eventStatus: '本周截止',
     title: '产业创新应用大赛进入报名尾声',
     reason: '与你当前的场景验证与产品落地节奏匹配',
     opportunityId: 'opp-contest-01',
-  },
-  {
+  }),
+  withCardTheme({
     id: 'disc-04',
     kind: '融资',
     eventStatus: '刚刚更新',
     title: '产业基金开放早期项目路演对接',
     reason: '适合当前阶段的融资与产业协同需求',
     opportunityId: 'opp-funding-01',
-  },
-  {
+  }),
+  withCardTheme({
     id: 'disc-05',
     kind: '园区服务',
     eventStatus: '剩余 5 天',
     title: '园区中试平台与工位开放申请',
     reason: '可支撑你正在推进的验证与小试',
     opportunityId: 'opp-park-01',
-  },
+  }),
 ]
 
 export const mockDeprioritizedDiscoveries: DiscoveryItem[] = [
